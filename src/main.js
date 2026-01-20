@@ -22,12 +22,11 @@ const config = {
     scene: [StartScene, GameScene, UIScene],
     
     // --- SEKCJA SKALOWANIA ---
-    scale: {
-        mode: Phaser.Scale.FIT, // Skaluje tak, aby zmieścić całość w oknie
-        autoCenter: Phaser.Scale.CENTER_BOTH, // Centruje w pionie i poziomie
-        // Opcjonalnie: minimalne i maksymalne wymiary, jeśli gra na tablecie wyglądałaby źle
-        // min: { width: 320, height: 480 },
-        // max: { width: 800, height: 1600 }
+   scale: {
+        mode: Phaser.Scale.FIT,
+        // ZMIANA: Wyłączamy centrowanie przez Phasera. 
+        // Zrobimy to lepiej w CSS, dzięki czemu unikniemy przesunięcia w prawo.
+        autoCenter: Phaser.Scale.NO_CENTER, 
     },
     
     render: {

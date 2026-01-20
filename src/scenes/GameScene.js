@@ -14,7 +14,8 @@ export class GameScene extends Phaser.Scene {
     canDrop = true; score = 0;
     grandBallsCollected = 0; ballsToWin = 3;
     isGameOver = false; isMorphingTrinity = false;
-    
+    isAiming = false; // <--- DODAJ TĘ ZMIENNĄ
+
     aimLine; bgGrid; floatingArtifacts = []; effects;
 
     preload() {
@@ -70,6 +71,7 @@ export class GameScene extends Phaser.Scene {
         this.grandBallsCollected = 0;
         this.isGameOver = false;
         this.isMorphingTrinity = false;
+        this.isAiming = false; // <--- DODAJ RESET TUTAJ
 
         // Reset UI (z lekkim opóźnieniem, żeby scena zdążyła wstać)
         this.time.delayedCall(50, () => {
@@ -149,15 +151,58 @@ export class GameScene extends Phaser.Scene {
     }
 
     setupInput() {
+        // Sprawdzamy typ urządzenia
+        const isDesktop = this.sys.game.device.os.desktop;
+
+        // 1. RUCH (Celowanie)
         this.input.on('pointermove', (pointer) => {
             if (this.isGameOver) return;
-            const pad = SETTINGS.sideMargin + 25;
-            this.aimLine.x = Phaser.Math.Clamp(pointer.x, pad, this.game.config.width - pad);
-            if (this.currentBallPreview && this.canDrop) this.currentBallPreview.x = this.aimLine.x;
+            this.updateAimPosition(pointer.x);
         });
-        this.input.on('pointerdown', () => {
-            if (!this.isGameOver && this.canDrop) this.dropBall(this.aimLine.x);
+
+        // 2. WCIŚNIĘCIE
+        this.input.on('pointerdown', (pointer) => {
+            if (this.isGameOver || !this.canDrop) return;
+            
+            this.updateAimPosition(pointer.x);
+
+            if (isDesktop) {
+                this.dropBall(this.aimLine.x);
+            } else {
+                this.isAiming = true;
+            }
         });
+
+        // 3. PUSZCZENIE (Dla mobile)
+        this.input.on('pointerup', () => {
+            if (this.isAiming && !isDesktop) {
+                if (this.canDrop) {
+                    this.dropBall(this.aimLine.x);
+                }
+                this.isAiming = false;
+            }
+        });
+
+        this.input.on('pointerupoutside', () => {
+            this.isAiming = false;
+        });
+    }
+
+    // --- TA METODA MUSI BYĆ TUTAJ, WEWNĄTRZ KLASY ---
+    updateAimPosition(x) {
+        // Upewniamy się, że SETTINGS istnieje
+        const sideMargin = (SETTINGS && SETTINGS.sideMargin) ? SETTINGS.sideMargin : 50;
+        const pad = sideMargin + 25;
+        
+        const clampedX = Phaser.Math.Clamp(x, pad, this.game.config.width - pad);
+        
+        if (this.aimLine) {
+            this.aimLine.x = clampedX;
+        }
+        
+        if (this.currentBallPreview && this.canDrop) {
+            this.currentBallPreview.x = clampedX;
+        }
     }
 
     spawnPreviewBall() {
