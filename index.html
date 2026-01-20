@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TEB Merge Game</title>
+    
+    <style>
+      /* Resetujemy marginesy przeglądarki */
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh; /* 100% wysokości okna */
+        width: 100vw;
+        overflow: hidden; /* Ukrywamy paski przewijania */
+        
+        /* TŁO STRONY (Poza grą) */
+        /* Ciemny, elegancki gradient (Blue-Grey) */
+        background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+        
+        /* Wyśrodkowanie kontenera gry (zabezpieczenie dla CSS) */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* Stylizacja samego okna gry */
+      #game-container canvas {
+        /* Dodajemy cień, żeby gra się "odbiła" od tła */
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
+        border-radius: 12px; /* Zaokrąglone rogi ekranu gry */
+        
+        /* Opcjonalnie: Delikatna ramka */
+        border: 1px solid #334155;
+      }
+    </style>
+
+    <script type="module" crossorigin src="/teb-merge-game/assets/index-CU4ZA5WP.js"></script>
+  </head>
+  <body>
+    <div id="game-container"></div>
+  </body>
+</html>
