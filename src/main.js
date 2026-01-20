@@ -1,33 +1,39 @@
 import Phaser from 'phaser';
 import { StartScene } from './scenes/StartScene';
-import { GameScene } from './scenes/GameScene'; // <--- Poprawiona ścieżka
-import { UIScene } from './scenes/UIScene';     // <--- Poprawiona ścieżka
+import { GameScene } from './scenes/GameScene';
+import { UIScene } from './scenes/UIScene';
+import { SETTINGS } from './Constants';
 
 const config = {
     type: Phaser.AUTO,
-    // Stałe wymiary wewnętrzne gry (canvasu)
-    width: 400, 
-    height: 800,
-    backgroundColor: '#0f172a', // Kolor tła ładowania
-    parent: 'game-container',
-    
-    // --- NOWA SEKCJA SKALOWANIA ---
-    scale: {
-        // FIT: Dopasuj do okna, ale zachowaj proporcje (będą czarne pasy po bokach)
-        mode: Phaser.Scale.FIT,
-        // CENTER_BOTH: Automatycznie wyśrodkuj w pionie i poziomie
-        autoCenter: Phaser.Scale.CENTER_BOTH
-    },
-    // ------------------------------
-
+    // Ustawiamy "wewnętrzną" rozdzielczość gry. 
+    // 400x800 to dobre proporcje dla nowoczesnych telefonów (ok. 9:18).
+    width: 400,  
+    height: 800, 
+    backgroundColor: SETTINGS.backgroundColor,
+    parent: 'app',
     physics: {
         default: 'matter',
         matter: {
-            gravity: { y: 1.5 },
-            debug: false
+            gravity: { y: SETTINGS.gravity },
+            debug: false 
         }
     },
-    scene: [StartScene, GameScene, UIScene]
+    scene: [StartScene, GameScene, UIScene],
+    
+    // --- SEKCJA SKALOWANIA ---
+    scale: {
+        mode: Phaser.Scale.FIT, // Skaluje tak, aby zmieścić całość w oknie
+        autoCenter: Phaser.Scale.CENTER_BOTH, // Centruje w pionie i poziomie
+        // Opcjonalnie: minimalne i maksymalne wymiary, jeśli gra na tablecie wyglądałaby źle
+        // min: { width: 320, height: 480 },
+        // max: { width: 800, height: 1600 }
+    },
+    
+    render: {
+        pixelArt: false,
+        antialias: true
+    }
 };
 
 new Phaser.Game(config);
