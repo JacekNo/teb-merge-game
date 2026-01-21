@@ -48,7 +48,7 @@ export class StartScene extends Phaser.Scene {
         this.createMenuButton(cx, startY + gap, 'ŚREDNI', '#3b82f6', () => this.startGame('MEDIUM'));
         this.createMenuButton(cx, startY + gap * 2, 'TRUDNY', '#ef4444', () => this.startGame('HARD'));
 
-        this.add.text(cx, height - 20, 'TEB Edukacja 2024 v1.3', { font: '12px Arial', color: '#475569' }).setOrigin(0.5);
+        this.add.text(cx, height - 20, 'TEB Edukacja 2026 v1.3', { font: '12px Arial', color: '#475569' }).setOrigin(0.5);
     }
 
     createMenuButton(x, y, text, colorHex, callback) {
