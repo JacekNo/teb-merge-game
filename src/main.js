@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { StartScene } from './scenes/StartScene';
+import { CollectionScene } from './scenes/CollectionScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
 import { SETTINGS } from './Constants';
@@ -19,10 +20,10 @@ const config = {
             debug: false 
         }
     },
-    scene: [StartScene, GameScene, UIScene],
-    
-    // --- SEKCJA SKALOWANIA ---
-   scale: {
+scene: [StartScene, GameScene, UIScene, CollectionScene],
+
+// --- SEKCJA SKALOWANIA ---
+scale: {
         mode: Phaser.Scale.FIT,
         // ZMIANA: Wyłączamy centrowanie przez Phasera. 
         // Zrobimy to lepiej w CSS, dzięki czemu unikniemy przesunięcia w prawo.

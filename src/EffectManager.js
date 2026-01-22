@@ -27,19 +27,37 @@ export class EffectManager {
 
     // Pływający tekst punktów (+100)
     showFloatingText(x, y, message, color) {
+        // Tworzymy kontener, żeby łatwiej skalować tekst razem z ewentualnym cieniem
+        // Ale dla wydajności wystarczy sam Text z obrysem
         const text = this.scene.add.text(x, y, message, { 
-            font: '900 40px Arial', 
-            color: color, 
-            stroke: '#000', 
-            strokeThickness: 4 
-        }).setOrigin(0.5).setDepth(2000);
+            font: '900 28px Arial', 
+            color: color || '#ffffff', 
+            stroke: '#000000', 
+            strokeThickness: 4,
+            shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 2, fill: true }
+        }).setOrigin(0.5).setDepth(2000).setScale(0); // Startujemy od zera
 
+        // 1. WYSKOK (Dynamiczny start)
         this.scene.tweens.add({
             targets: text,
-            y: y - 100,
-            alpha: 0,
-            duration: 1500,
-            onComplete: () => text.destroy()
+            scaleX: 1, scaleY: 1,
+            duration: 200,
+            ease: 'Back.Out', // Efekt sprężynki przy pojawieniu się
+        });
+
+        // 2. UNOSZENIE I ZNIKANIE (Delikatny koniec)
+        // Lekki losowy ruch na boki (żeby nie wszystkie leciały idealnie prosto)
+        const randomX = Phaser.Math.Between(-20, 20);
+        
+        this.scene.tweens.add({
+            targets: text,
+            y: y - 80,       // Unoszenie w górę
+            x: x + randomX,  // Lekko na bok
+            alpha: 0,        // Zanikanie
+            duration: 1000,  // Całość trwa 1 sekundę
+            delay: 100,      // Chwila widoczności zanim zacznie znikać
+            ease: 'Quad.Out',
+            onComplete: () => text.destroy() // Sprzątanie
         });
     }
 

@@ -1,89 +1,135 @@
 import Phaser from 'phaser';
-import { SoundManager } from '../SoundManager'; 
-import { setDifficulty } from '../Constants';
+import { SoundManager } from '../SoundManager';
+import { StorageManager } from '../StorageManager';
+import { setDifficulty } from '../Constants'; // Importujemy funkcję z Constants
 
 export class StartScene extends Phaser.Scene {
-    constructor() {
-        super({ key: 'StartScene' });
-    }
+    constructor() { super('StartScene'); }
+
+    // Kontener na przyciski menu głównego
+    mainMenuContainer;
+    // Kontener na przyciski wyboru trudności
+    difficultyContainer;
 
     preload() {
         this.load.setPath('assets');
-        this.load.image('bg_main', 'background.png');
+        
+        // --- ZAKOMENTUJ TE LINIE JEŚLI NIE MASZ PLIKÓW MP3 ---
+        // this.load.audio('theme', 'music_loop.mp3'); 
+        // this.load.audio('drop', 'sfx_drop.mp3');
+        // this.load.audio('merge', 'sfx_merge.mp3');
+        // this.load.audio('grand', 'sfx_grand.mp3');
+        // this.load.audio('click', 'sfx_click.mp3');
+        // this.load.audio('gameover', 'sfx_gameover.mp3');
+        // -----------------------------------------------------
+
+        // --- 2. GRAFIKA MENU ---
+        this.load.image('bg_menu', 'bg_start.png');
         this.load.svg('logo_full', 'logo_full.svg');
+        this.load.image('title_game', 'teb_masters.png');
     }
 
     create() {
-        const width = this.game.config.width;
-        const height = this.game.config.height;
-        const cx = width / 2;
-        const cy = height / 2;
+        const w = this.scale.width;
+        const h = this.scale.height;
 
-        // 1. TŁO
-        if (this.textures.exists('bg_main')) {
-            const bg = this.add.image(cx, cy, 'bg_main');
-            const scale = Math.max(width / bg.width, height / bg.height);
-            bg.setScale(scale).setScrollFactor(0);
-            bg.setTint(0x666666); 
+        // Inicjalizacja dźwięku
+        SoundManager.init(this);
+        // Opcjonalnie: SoundManager.playMusic('theme');
+
+        // Tło
+        this.add.image(w/2, h/2, 'bg_menu').setDisplaySize(w, h);
+        
+        // LOGO
+        if (this.textures.exists('title_game')) {
+            const logo = this.add.image(w/2, h/3 - 20, 'title_game').setScale(0.4);
+            this.tweens.add({
+                targets: logo, scaleX: 0.44, scaleY: 0.44, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.InOut'
+            });
         } else {
-            this.add.rectangle(cx, cy, width, height, 0x0f172a).setDepth(-100);
+            this.add.text(w/2, h/3, 'TEB GAME', { font: '900 60px Arial', color: '#fff' }).setOrigin(0.5);
         }
 
-        // 2. LOGO
-        if (this.textures.exists('logo_full')) {
-            const logo = this.add.image(cx, 120, 'logo_full');
-            const maxW = 260;
-            if (logo.width > maxW) logo.setScale(maxW / logo.width);
-        }
+        // --- KONTENER MENU GŁÓWNEGO ---
+        this.mainMenuContainer = this.add.container(0, 0);
 
-        // 3. MENU TRUDNOŚCI
-        this.add.text(cx, cy - 60, 'WYBIERZ POZIOM', {
-            font: '700 24px Arial', color: '#94a3b8'
-        }).setOrigin(0.5);
+        const playBtn = this.createButton(w/2, h/2 + 60, 'GRAJ', '#C51523', () => {
+            this.showDifficultyMenu(true);
+        });
 
-        const startY = cy + 10;
-        const gap = 90;
+        const total = 21; 
+        const unlocked = StorageManager.data.discovered ? StorageManager.data.discovered.length : 0;
+        const colBtn = this.createButton(w/2, h/2 + 140, `KOLEKCJA (${unlocked}/${total})`, '#102D69', () => {
+            this.scene.start('CollectionScene');
+        });
 
-        this.createMenuButton(cx, startY, 'ŁATWY', '#22c55e', () => this.startGame('EASY'));
-        this.createMenuButton(cx, startY + gap, 'ŚREDNI', '#3b82f6', () => this.startGame('MEDIUM'));
-        this.createMenuButton(cx, startY + gap * 2, 'TRUDNY', '#ef4444', () => this.startGame('HARD'));
+        this.mainMenuContainer.add([playBtn, colBtn]);
 
-        this.add.text(cx, height - 20, 'TEB Edukacja 2024 v1.3', { font: '12px Arial', color: '#475569' }).setOrigin(0.5);
+        // --- KONTENER WYBORU TRUDNOŚCI (Domyślnie ukryty) ---
+        this.difficultyContainer = this.add.container(0, 0).setVisible(false).setAlpha(0);
+
+        const diffTitle = this.add.text(w/2, h/2 + 20, 'WYBIERZ POZIOM:', { font: 'bold 20px Arial', color: '#fff' })
+        .setOrigin(0.5);
+        this.difficultyContainer.add(diffTitle);
+
+        const easyBtn = this.createButton(w/2, h/2 + 70, 'ŁATWY (dopiero się uczę)', '#22c55e', () => this.startGame('EASY'));
+        const medBtn = this.createButton(w/2, h/2 + 140, 'ŚREDNI (znam kierunek)', '#f59e0b', () => this.startGame('MEDIUM'));
+        const hardBtn = this.createButton(w/2, h/2 + 210, 'TRUDNY (wiem co robię)', '#ef4444', () => this.startGame('HARD'));
+        
+        // Przycisk powrotu
+        const backBtn = this.add.text(w/2, h - 50, 'ANULUJ', { font: 'bold 16px Arial', color: '#94a3b8' })
+            .setOrigin(0.5).setInteractive({ useHandCursor: true });
+        
+        backBtn.on('pointerdown', () => { SoundManager.play('click'); this.showDifficultyMenu(false); });
+        
+        this.difficultyContainer.add([easyBtn, medBtn, hardBtn, backBtn]);
     }
 
-    createMenuButton(x, y, text, colorHex, callback) {
-        const container = this.add.container(x, y);
-        const shadow = this.add.rectangle(0, 5, 240, 70, 0x000000, 0.3).setOrigin(0.5);
-        const bg = this.add.rectangle(0, 0, 240, 70, Number(colorHex.replace('#', '0x')))
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true });
-        const label = this.add.text(0, 0, text, { font: '900 32px Arial', color: '#ffffff' }).setOrigin(0.5);
-
-        container.add([shadow, bg, label]);
-
-        bg.on('pointerdown', () => {
-            SoundManager.init();
-            SoundManager.play('click');
-            this.tweens.add({
-                targets: container, scaleX: 0.95, scaleY: 0.95, duration: 50, yoyo: true,
-                onComplete: callback
-            });
-        });
+    showDifficultyMenu(show) {
+        if (show) {
+            // Ukryj główne, pokaż trudność
+            this.mainMenuContainer.setVisible(false);
+            this.difficultyContainer.setVisible(true);
+            this.tweens.add({ targets: this.difficultyContainer, alpha: 1, duration: 300 });
+        } else {
+            // Wróć do głównego
+            this.difficultyContainer.setVisible(false).setAlpha(0);
+            this.mainMenuContainer.setVisible(true);
+        }
     }
 
     startGame(difficulty) {
+        // Ustawiamy globalną trudność
         setDifficulty(difficulty);
+        
+        // Startujemy grę
+        this.scene.start('GameScene');
+    }
 
-        // --- KLUCZOWA POPRAWKA ---
-        // Najpierw ubijamy stare UI (jeśli istnieje), żeby nie blokowało nowej gry
-        if (this.scene.get('UIScene')) {
-            this.scene.stop('UIScene');
-        }
+    createButton(x, y, text, color, callback) {
+        const btn = this.add.container(x, y);
+        const bg = this.add.rectangle(0, 0, 280, 60, parseInt(color.replace('#', '0x')), 1)
+            .setInteractive({ useHandCursor: true });
+        bg.setStrokeStyle(2, 0xffffff, 0.5);
+        const label = this.add.text(0, 0, text, { font: 'bold 20px Arial', color: '#ffffff' }).setOrigin(0.5);
 
-        // Animacja wyjścia i start nowej sceny
-        this.cameras.main.fadeOut(300, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('GameScene');
+        btn.add([bg, label]);
+
+        bg.on('pointerover', () => {
+            this.tweens.add({ targets: btn, scaleX: 1.05, scaleY: 1.05, duration: 100 });
+            bg.setFillStyle(0xffffff); label.setColor(color);
         });
+        bg.on('pointerout', () => {
+            this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 100 });
+            bg.setFillStyle(parseInt(color.replace('#', '0x'))); label.setColor('#ffffff');
+        });
+        bg.on('pointerdown', () => {
+            SoundManager.play('click');
+            this.tweens.add({
+                targets: btn, scaleX: 0.95, scaleY: 0.95, duration: 50, yoyo: true,
+                onComplete: callback
+            });
+        });
+        return btn;
     }
 }
