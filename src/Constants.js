@@ -5,112 +5,89 @@ export const SETTINGS = {
     dropDelay: 250,
     backgroundColor: '#0f172a',
 
-    // --- FULL SCREEN LAYOUT ---
+    // --- LAYOUT ---
     uiHeight: 0, 
-    jarX: 0,
-    jarY: 0,
-    jarWidth: 400,
-    jarHeight: 800,
+    jarX: 0, jarY: 0,
+    jarWidth: 400, jarHeight: 800,
 
-    wallThickness: 100,
-    sideMargin: 10,
-    bottomMargin: 20,
-
-    spawnY: 180,       
-    dangerLineY: 240,  
+    sideMargin: 10, bottomMargin: 20,
+    spawnY: 180, dangerLineY: 240,  
 };
 
 export const TEB_GRAND_BALL = {
-    radius: 50,
+    radius: 95, 
     color: '#102D69',
     label: 'TEB',
-    points: 1000
+    points: 5000
 };
 
-// === 1. DEFINICJE MAREK ===
-
-// A. Standardowe (Dla Łatwy/Średni) - 3 rodzaje
-export const BRANDS_STD = {
-    TM: { id: 'tm', color: '#C51523', label: 'TM', iconKey: 'icon_tm_a' }, // Domyślnie wariant A
-    LP: { id: 'lp', color: '#A43282', label: 'LP', iconKey: 'icon_lp_a' },
-    LO: { id: 'lo', color: '#0085B7', label: 'LO', iconKey: 'icon_lo_a' }
+// === 1. DEFINICJE MAREK (TYLKO 3 GŁÓWNE) ===
+export const BRANDS = {
+    TM: { id: 'tm', color: '#C51523', label: 'Technikum' }, 
+    LO: { id: 'lo', color: '#0085B7', label: 'Liceum' },
+    LP: { id: 'lp', color: '#A43282', label: 'Plastyczne' }
 };
 
-// B. Rozszerzone (Dla Trudny) - 6 rodzajów
-export const BRANDS_HARD = {
-    TM_A: { id: 'tm_a', color: '#C51523', label: 'TM', iconKey: 'icon_tm_a' },
-    TM_B: { id: 'tm_b', color: '#C51523', label: 'TM', iconKey: 'icon_tm_b' }, // Inna ikona
+// === 2. DEFINICJE POZIOMÓW (TIERS 0-7) ===
+export const TIERS = [
+    // --- FAZA WSTĘPNA ---
+    { level: 0, radius: 13, points: 5,   name: 'Iskra',     type: 'NEUTRAL' }, // Było 16
+    { level: 1, radius: 19, points: 10,  name: 'Pasja',     type: 'SOLID'   }, // Było 24
     
-    LP_A: { id: 'lp_a', color: '#A43282', label: 'LP', iconKey: 'icon_lp_a' },
-    LP_B: { id: 'lp_b', color: '#A43282', label: 'LP', iconKey: 'icon_lp_b' },
+    // --- FAZA IKON (EWOLUCJA) ---
+    { level: 2, radius: 27, points: 25,  name: 'Kierunek',  type: 'ICON'    }, // Było 34
+    { level: 3, radius: 36, points: 60,  name: 'Wiedza',    type: 'ICON'    }, // Było 44
+    
+    // Tu wchodzą PNG (bogatsze detale)
+    { level: 4, radius: 46, points: 150, name: 'Praktyka',  type: 'ICON'    }, // Było 56
+    { level: 5, radius: 58, points: 350, name: 'Ekspert',   type: 'ICON'    }, // Było 70
 
-    LO_A: { id: 'lo_a', color: '#0085B7', label: 'LO', iconKey: 'icon_lo_a' },
-    LO_B: { id: 'lo_b', color: '#0085B7', label: 'LO', iconKey: 'icon_lo_b' }
-};
+    // --- FAZA SYGNETÓW ---
+    { level: 6, radius: 71, points: 800, name: 'Absolwent', type: 'SIGNET'  }, // Było 85 (Teraz 3 mieszczą się na styk!)
 
-// --- FIX DLA TEXTURE GENERATOR ---
-// TextureGenerator musi widzieć WSZYSTKIE możliwe marki, żeby wygenerować dla nich grafiki na starcie.
-// Łączymy obie listy w jedną dużą, którą eksportujemy jako 'BRANDS'.
-export const BRANDS = { ...BRANDS_STD, ...BRANDS_HARD };
-
-// === 2. DEFINICJE POZIOMÓW (TIERS) ===
-const ALL_TIERS = [
-    { level: 0, radius: 24, points: 10,  name: 'Draft' },
-    { level: 1, radius: 28, points: 30,  name: 'Projekt' },
-    { level: 2, radius: 34, points: 90,  name: 'Hero' },
-    { level: 3, radius: 40, points: 300, name: 'Sygnet' },
+    // --- FAZA MASTER ---
+    { level: 7, radius: 82, points: 5000, name: 'TEB Master', type: 'GRAND' }  // Było 95
 ];
 
-// Eksportujemy jako TIERS dla TextureGeneratora i GameScene
-export const TIERS = ALL_TIERS;
-
-// === 3. GLOBALNA KONFIGURACJA (State) ===
-// To będzie czytane przez GameScene w trakcie gry
 export const GAME_CONFIG = {
-    activeBrands: BRANDS_STD, 
-    activeTiers: ALL_TIERS,
+    activeBrands: {}, 
+    activeTiers: TIERS,
     spawnPool: []
 };
 
-// === 4. FUNKCJA USTAWIAJĄCA TRUDNOŚĆ ===
+// === 4. LOGIKA TRUDNOŚCI ===
 export function setDifficulty(mode) {
-    let brandsSource = BRANDS_STD;
-    let tiersSource = ALL_TIERS;
+    let selectedBrands = {};
 
     switch (mode) {
-        case 'EASY':
-            // ŁATWY: Usuwamy najmniejszy tier (0). Gra zaczyna się od Projektu (1).
-            // 3 Marki.
-            tiersSource = ALL_TIERS.filter(t => t.level >= 1);
-            brandsSource = BRANDS_STD;
+        case 'EASY': // Tylko 2 marki, brak szarych
+            selectedBrands = { TM: BRANDS.TM, LO: BRANDS.LO };
             break;
-
-        case 'MEDIUM':
-            // ŚREDNI: Wszystkie tiery (0-3). 3 Marki.
-            tiersSource = ALL_TIERS;
-            brandsSource = BRANDS_STD;
+        // Medium i Hard na razie to to samo przy 3 markach, 
+        // różnicą może być ilość szarych kulek w przyszłości
+        case 'MEDIUM': 
+        case 'HARD': 
+            selectedBrands = BRANDS; // Wszystkie 3 (TM, LO, LP)
             break;
-
-        case 'HARD':
-            // TRUDNY: Wszystkie tiery. 6 Marek (Warianty A i B).
-            tiersSource = ALL_TIERS;
-            brandsSource = BRANDS_HARD;
-            break;
+        default:
+            selectedBrands = BRANDS;
     }
 
-    // Zapisujemy do globalnego configu
-    GAME_CONFIG.activeBrands = brandsSource;
-    GAME_CONFIG.activeTiers = tiersSource;
+    GAME_CONFIG.activeBrands = selectedBrands;
+    GAME_CONFIG.activeTiers = TIERS;
 
-    // Generujemy Spawn Pool (Co wpada do słoika)
-    // Zrzucamy tylko najniższy dostępny tier dla danej konfiguracji
-    const startLevel = tiersSource[0].level; 
-    
     GAME_CONFIG.spawnPool = [];
-    Object.values(brandsSource).forEach(brand => {
-        GAME_CONFIG.spawnPool.push({ brand: brand.id, tier: startLevel });
+
+    // Szare kulki (Tier 0) - wyłączone na EASY
+    if (mode !== 'EASY') {
+        for(let i=0; i<3; i++) GAME_CONFIG.spawnPool.push({ brand: 'neutral', tier: 0 });
+    }
+
+    // Kolorowe kulki (Tier 1)
+    Object.values(selectedBrands).forEach(brand => {
+        const count = (mode === 'EASY') ? 4 : 2; 
+        for(let i=0; i<count; i++) GAME_CONFIG.spawnPool.push({ brand: brand.id, tier: 1 });
     });
 }
 
-// Domyślna inicjalizacja (Fallback)
 setDifficulty('MEDIUM');

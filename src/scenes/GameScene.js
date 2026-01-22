@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import { SETTINGS, GAME_CONFIG, TEB_GRAND_BALL } from '../Constants';
+import { SETTINGS, GAME_CONFIG, TEB_GRAND_BALL, TIERS, BRANDS } from '../Constants';
 import { TextureGenerator } from '../TextureGenerator';
 import { EnvironmentBuilder } from '../EnvironmentBuilder';
 import { SoundManager } from '../SoundManager';
 import { EffectManager } from '../EffectManager';
+import { StorageManager } from '../StorageManager';
 
 export class GameScene extends Phaser.Scene {
     constructor() { super('GameScene'); }
@@ -12,26 +13,36 @@ export class GameScene extends Phaser.Scene {
     currentBrand = null; currentTier = 0; currentBallPreview = null;
     nextBallBrand = null; nextBallTier = 0;
     canDrop = true; score = 0;
-    grandBallsCollected = 0; ballsToWin = 3;
+    grandBallsCollected = 0; 
     isGameOver = false; isMorphingTrinity = false;
-    isAiming = false; // <--- DODAJ TĘ ZMIENNĄ
+    isAiming = false;
 
     aimLine; bgGrid; floatingArtifacts = []; effects;
 
-    preload() {
+        preload() {
         this.load.setPath('assets');
-        ['tm_a', 'lo_a', 'lp_a', 'tm_b', 'lo_b', 'lp_b'].forEach(k => 
-            this.load.svg(`icon_${k}`, `${k.startsWith('tm')?'tm':k.startsWith('lo')?'lo':'lp'}_icon_${k.endsWith('a')?'1':'2'}.svg`));
-        ['tm', 'lo', 'lp'].forEach(k => {
-            this.load.svg(`signet_${k}`, `signet_${k}.svg`);
-            this.load.svg(`glyph_${k}`, `glyph_${k}.svg`);
-        });
+        
+        // 1. Główne
         this.load.svg('logo_teb', 'logo_teb.svg');
-        this.load.svg('claim', 'claim.svg');
         this.load.image('bg_main', 'background.png');
+
+        // 2. Ikony Ewolucji (T2-T5) i Sygnety (T6)
+        const brands = ['tm', 'lo', 'lp'];
+        brands.forEach(id => {
+            this.load.svg(`icon_${id}_2`, `icon_${id}_2.svg`);
+            this.load.svg(`icon_${id}_3`, `icon_${id}_3.svg`);
+            this.load.image(`icon_${id}_4`, `icon_${id}_4.png`); // PNG
+            this.load.image(`icon_${id}_5`, `icon_${id}_5.png`); // PNG
+            this.load.svg(`signet_${id}`, `signet_${id}.svg`);
+            
+            // --- 3. PRZYWRÓCONE: GLIFY TŁA ---
+            // To naprawi brakujące elementy w tle!
+            this.load.svg(`glyph_${id}`, `glyph_${id}.svg`);
+        });
     }
 
     create() {
+        StorageManager.init();
         // 1. GRAFIKA
         TextureGenerator.createAll(this);
         const env = EnvironmentBuilder.init(this);
@@ -47,35 +58,30 @@ export class GameScene extends Phaser.Scene {
         this.setupInput();
         this.setupCollisions();
 
-        // 4. UI START (POPRAWKA: Bez sprawdzania isActive, po prostu uruchamiamy)
+        // 4. UI
         this.scene.launch('UIScene');
         
-        // Listener powrotu
         this.events.on('request-menu', () => { 
             this.scene.stop('UIScene');
             this.scene.start('StartScene'); 
         });
-
-        // 5. START LOGIKI
+        SoundManager.init(this);
+        // 5. START
         this.startNewGame();
     }
 
     startNewGame() {
-        // Zmuszamy silnik do pracy
         this.sys.resume();
         this.matter.world.resume();
         
-        // Reset zmiennych
         this.canDrop = true;
         this.score = 0;
         this.grandBallsCollected = 0;
         this.isGameOver = false;
         this.isMorphingTrinity = false;
-        this.isAiming = false; // <--- DODAJ RESET TUTAJ
+        this.isAiming = false;
 
-        // Reset UI (z lekkim opóźnieniem, żeby scena zdążyła wstać)
         this.time.delayedCall(50, () => {
-            // Wymuszamy zamknięcie menu pauzy w UI (jeśli by wisiało)
             if (this.scene.get('UIScene')) {
                 this.scene.get('UIScene').forceMenuClose();
             }
@@ -98,7 +104,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     resetRoundLogic() {
-        // Losowanie pierwszych kulek
+        // Losowanie z puli (może być Neutral Tier 0 lub Kolor Tier 1)
         let pick = Phaser.Utils.Array.GetRandom(GAME_CONFIG.spawnPool);
         this.currentBrand = pick.brand; this.currentTier = pick.tier;
 
@@ -151,21 +157,16 @@ export class GameScene extends Phaser.Scene {
     }
 
     setupInput() {
-        // Sprawdzamy typ urządzenia
         const isDesktop = this.sys.game.device.os.desktop;
 
-        // 1. RUCH (Celowanie)
         this.input.on('pointermove', (pointer) => {
             if (this.isGameOver) return;
             this.updateAimPosition(pointer.x);
         });
 
-        // 2. WCIŚNIĘCIE
         this.input.on('pointerdown', (pointer) => {
             if (this.isGameOver || !this.canDrop) return;
-            
             this.updateAimPosition(pointer.x);
-
             if (isDesktop) {
                 this.dropBall(this.aimLine.x);
             } else {
@@ -173,44 +174,43 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
-        // 3. PUSZCZENIE (Dla mobile)
         this.input.on('pointerup', () => {
             if (this.isAiming && !isDesktop) {
-                if (this.canDrop) {
-                    this.dropBall(this.aimLine.x);
-                }
+                if (this.canDrop) this.dropBall(this.aimLine.x);
                 this.isAiming = false;
             }
         });
-
-        this.input.on('pointerupoutside', () => {
-            this.isAiming = false;
-        });
+        
+        this.input.on('pointerupoutside', () => { this.isAiming = false; });
     }
 
-    // --- TA METODA MUSI BYĆ TUTAJ, WEWNĄTRZ KLASY ---
     updateAimPosition(x) {
-        // Upewniamy się, że SETTINGS istnieje
         const sideMargin = (SETTINGS && SETTINGS.sideMargin) ? SETTINGS.sideMargin : 50;
         const pad = sideMargin + 25;
-        
         const clampedX = Phaser.Math.Clamp(x, pad, this.game.config.width - pad);
         
-        if (this.aimLine) {
-            this.aimLine.x = clampedX;
-        }
-        
-        if (this.currentBallPreview && this.canDrop) {
-            this.currentBallPreview.x = clampedX;
-        }
+        if (this.aimLine) this.aimLine.x = clampedX;
+        if (this.currentBallPreview && this.canDrop) this.currentBallPreview.x = clampedX;
     }
 
     spawnPreviewBall() {
         if (this.currentBallPreview) this.currentBallPreview.destroy();
-        const tierDef = GAME_CONFIG.activeTiers.find(t => t.level === this.currentTier);
+        
+        // Pobieramy definicję tieru
+        const tierDef = TIERS.find(t => t.level === this.currentTier);
         if (!tierDef) return;
 
-        const key = `ball_${this.currentBrand}_${this.currentTier}`;
+        // Klucz tekstury - obsługa Neutral vs Brand
+        let key;
+        if (this.currentBrand === 'neutral') {
+            key = `ball_neutral_${this.currentTier}`;
+        } else {
+            key = `ball_${this.currentBrand}_${this.currentTier}`;
+        }
+
+        // Fallback, jeśli tekstura nie istnieje (żeby nie wywaliło gry)
+        if (!this.textures.exists(key)) key = `ball_neutral_0`;
+
         this.currentBallPreview = this.add.image(this.aimLine ? this.aimLine.x : 200, SETTINGS.spawnY, key)
             .setDisplaySize(tierDef.radius*2, tierDef.radius*2).setAlpha(0.8);
         
@@ -218,30 +218,66 @@ export class GameScene extends Phaser.Scene {
     }
 
     dropBall(x) {
+        
         this.canDrop = false;
         if (this.currentBallPreview) { this.currentBallPreview.destroy(); this.currentBallPreview = null; }
 
         this.spawnBall(x, SETTINGS.spawnY, this.currentBrand, this.currentTier, false);
 
+        // Kolejkowanie następnej kulki
         this.currentBrand = this.nextBallBrand; this.currentTier = this.nextBallTier;
+        
         const nextPick = Phaser.Utils.Array.GetRandom(GAME_CONFIG.spawnPool);
         this.nextBallBrand = nextPick.brand; this.nextBallTier = nextPick.tier;
         
         this.events.emit('update-next', { brand: this.nextBallBrand, tier: this.nextBallTier });
-        this.time.addEvent({ delay: SETTINGS.dropDelay, callback: () => { this.canDrop = true; this.spawnPreviewBall(); } });
+        
+        this.time.addEvent({ delay: SETTINGS.dropDelay, callback: () => { 
+            this.canDrop = true; 
+            this.spawnPreviewBall(); 
+        }});
     }
 
     spawnBall(x, y, brandKey, tierLevel, isSafe) {
-        const brand = GAME_CONFIG.activeBrands[brandKey.toUpperCase()] || GAME_CONFIG.activeBrands[brandKey];
-        const tier = GAME_CONFIG.activeTiers.find(t => t.level === tierLevel);
-        if (!brand || !tier) return null;
+        const tier = TIERS.find(t => t.level === tierLevel);
+        if (!tier) return null;
 
-        let key = `ball_${brand.id}_${tier.level}`;
-        if (!this.textures.exists(key)) key = `ball_${brandKey}_0`;
+        // --- POPRAWKA: USTALANIE KLUCZA TEKSTURY ---
+        let key;
+        
+        // 1. Jeśli to Tier 7 (Grand Ball), ZAWSZE używamy tej tekstury
+        if (tierLevel === 7) {
+            key = 'ball_TEB_GRAND';
+        } 
+        // 2. Jeśli marka to 'neutral'
+        else if (brandKey === 'neutral') {
+            key = `ball_neutral_${tierLevel}`;
+        } 
+        // 3. Standardowa kulka brandowa
+        else {
+            key = `ball_${brandKey}_${tierLevel}`;
+        }
 
+        // Fallback (gdyby coś poszło bardzo źle)
+        if (!this.textures.exists(key)) {
+            console.warn(`Brak tekstury: ${key}, używam fallbacku.`);
+            key = this.textures.exists('ball_neutral_0') ? 'ball_neutral_0' : 'spark'; 
+        }
+
+        // Fizyczne stworzenie obiektu
         const ball = this.matter.add.image(x, y, key);
-        ball.setCircle(tier.radius).setBounce(SETTINGS.bounce).setFriction(SETTINGS.friction);
-        ball.setData({ brand: brand.id, tier: tier.level, safe: isSafe });
+        
+        // Parametry fizyczne
+        ball.setCircle(tier.radius);
+        ball.setBounce(SETTINGS.bounce);
+        ball.setFriction(SETTINGS.friction);
+
+        // Dociążenie
+        const density = 0.001 + (tierLevel * 0.0005); 
+        ball.setDensity(density);
+
+        // Zapis danych
+        ball.setData({ brand: brandKey, tier: tierLevel, safe: isSafe });
 
         if (!isSafe) {
             SoundManager.play('drop');
@@ -260,52 +296,116 @@ export class GameScene extends Phaser.Scene {
                     const bA = bodyA.gameObject; const bB = bodyB.gameObject;
                     bA.setData('safe', true); bB.setData('safe', true);
 
-                    if (bA.getData('brand') === bB.getData('brand') && 
-                        bA.getData('tier') === bB.getData('tier') && 
-                        bA.getData('tier') < 3 && 
+                    // --- LOGIKA MERGE ---
+                    // Sprawdzamy czy to ten sam tier
+                    const tierA = bA.getData('tier');
+                    const tierB = bB.getData('tier');
+                    
+                    if (tierA === tierB && 
+                        tierA < 7 && // Nie łączymy Grand Balli w ten sposób
                         !bA.isDestroying && !bB.isDestroying) {
-                        this.handleMerge(bA, bB);
+
+                        const brandA = bA.getData('brand');
+                        const brandB = bB.getData('brand');
+
+                        // WARUNEK 1: Obie są Neutralne (Tier 0 -> Tier 1)
+                        // Wtedy łączą się zawsze
+                        if (brandA === 'neutral' && brandB === 'neutral') {
+                            this.handleMerge(bA, bB, true); // true = forceRandomBrand
+                            return;
+                        }
+
+                        // WARUNEK 2: Ten sam Kolor (Tier 1+ -> Tier 2+)
+                        if (brandA === brandB && brandA !== 'neutral') {
+                            this.handleMerge(bA, bB, false);
+                            return;
+                        }
+
+                        // Inne przypadki (Różne kolory) -> Brak reakcji (odpychanie fizyczne)
                     }
                 }
             });
         });
     }
 
-    handleMerge(ballA, ballB) {
-        if (!ballA.body || !ballB.body || ballA.isDestroying || ballB.isDestroying) return;
-
+    handleMerge(ballA, ballB, randomizeBrand) {
         ballA.isDestroying = true; ballB.isDestroying = true;
-        this.tweens.killTweensOf([ballA, ballB]);
-        ballA.setSensor(true).setStatic(true); ballB.setSensor(true).setStatic(true);
-
-        const newX = (ballA.x + ballB.x) / 2; const newY = (ballA.y + ballB.y) / 2;
-        const brandId = ballA.getData('brand');
-        const nextTier = ballA.getData('tier') + 1;
         
-        const tierObj = GAME_CONFIG.activeTiers.find(t => t.level === ballA.getData('tier'));
+        // Zatrzymujemy fizykę
+        ballA.setSensor(true).setStatic(true); 
+        ballB.setSensor(true).setStatic(true);
+        this.tweens.killTweensOf([ballA, ballB]);
+
+        const newX = (ballA.x + ballB.x) / 2; 
+        const newY = (ballA.y + ballB.y) / 2;
+        
+        const currentTier = ballA.getData('tier');
+        const nextTier = currentTier + 1;
+
+        // Punkty
+        const tierObj = TIERS.find(t => t.level === currentTier);
         if (tierObj) {
             this.score += tierObj.points;
             this.events.emit('update-score', this.score);
+            
+            // --- DODAJ TO WYWOŁANIE: ---
+            // Kolor tekstu bierzemy z marki nowej kulki (żeby pasował)
+            // Lub złoty (#fbbf24) jeśli to wysoki tier
+            let textColor = '#ffffff';
+            if (ballA.getData('brand') && BRANDS[ballA.getData('brand').toUpperCase()]) {
+                 textColor = BRANDS[ballA.getData('brand').toUpperCase()].color;
+            }
+            if (nextTier >= 5) textColor = '#fbbf24'; // Złoty dla eksperta/absolwenta
+
+            this.effects.showFloatingText(newX, newY, `+${tierObj.points}`, textColor);
+            // ---------------------------
         }
 
-        this.effects.createEnergyRipple(newX, newY); // UŻYCIE EFFECT MANAGERA
-        SoundManager.play('merge', { tier: ballA.getData('tier') });
+        // Dźwięk łączenia (chyba że to finał, wtedy cisza przed burzą)
+        if (nextTier < 7) SoundManager.play('merge', { tier: nextTier });
 
-        this.tweens.add({
-            targets: [ballA, ballB], x: newX, y: newY, scaleX: 0.1, scaleY: 0.1, duration: 50,
-            onComplete: () => {
-                ballA.destroy(); ballB.destroy();
-                if (GAME_CONFIG.activeTiers.some(t => t.level === nextTier)) {
-                    this.spawnMergedBall(newX, newY, brandId, nextTier);
-                    if (nextTier === 3) this.time.delayedCall(50, () => this.checkTrinityCondition());
-                }
+        // --- DECYZJA O ANIMACJI ---
+        
+        // SCENARIUSZ 1: FINAŁ (T6 + T6 -> T7)
+        if (nextTier === 7) {
+            // Uruchamiamy specjalną sekwencję implozji
+            this.performFinalImplosion(ballA, ballB, newX, newY);
+        } 
+        
+        // SCENARIUSZ 2: STANDARDOWY MERGE
+        else {
+            let nextBrand = ballA.getData('brand');
+            if (randomizeBrand) {
+                const availableBrands = Object.values(GAME_CONFIG.activeBrands);
+                nextBrand = Phaser.Utils.Array.GetRandom(availableBrands).id;
             }
-        });
+
+            this.effects.createEnergyRipple(newX, newY);
+            
+            this.tweens.add({
+                targets: [ballA, ballB], x: newX, y: newY, scaleX: 0.1, scaleY: 0.1, duration: 80,
+                onComplete: () => {
+                    ballA.destroy(); ballB.destroy();
+                    this.spawnMergedBall(newX, newY, nextBrand, nextTier);
+                }
+            });
+        }
     }
 
     spawnMergedBall(x, y, brand, tier) {
+        // 1. Sprawdź, czy to nowe odkrycie (dla Tier 2 i wyżej)
+        if (tier >= 2) {
+             // Jeśli StorageManager zwróci true, znaczy że to pierwszy raz
+             if (StorageManager.markAsDiscovered(brand, tier)) {
+                 // Wysyłamy sygnał do UI, żeby pokazało Toast
+                 this.events.emit('discovery', { brand: brand, tier: tier });
+             }
+        }
+
+        // 2. Standardowa logika spawnowania
         const ball = this.spawnBall(x, y, brand, tier, true);
         if (!ball) return;
+        
         ball.setVisible(false);
         const dummy = this.add.image(x, y, ball.texture.key).setDisplaySize(ball.displayWidth, ball.displayHeight).setScale(0.5).setAlpha(0.8).setDepth(10);
         this.tweens.add({
@@ -315,25 +415,44 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    // --- TRINITY CLEANER LOGIC ---
     checkTrinityCondition() {
         if (this.isMorphingTrinity) return;
-        const balls = this.children.list.filter(c => c.getData && c.getData('tier') === 3 && c.getData('safe') && !c.isDestroying);
-        const tm = balls.find(b => b.getData('brand').toLowerCase().startsWith('tm'));
-        const lo = balls.find(b => b.getData('brand').toLowerCase().startsWith('lo'));
-        const lp = balls.find(b => b.getData('brand').toLowerCase().startsWith('lp'));
+        
+        // Szukamy wszystkich kul z Tier 6 (Absolwent)
+        const candidates = this.children.list.filter(c => 
+            c.getData && 
+            c.getData('tier') === 6 && 
+            c.getData('safe') && 
+            !c.isDestroying
+        );
 
-        if (tm && lo && lp) this.performTrinityMerge(tm, lo, lp);
+        if (candidates.length < 3) return;
+
+        // Szukamy 3 RÓŻNYCH marek
+        // Set automatycznie usuwa duplikaty
+        const uniqueBrands = new Set();
+        const selectedBalls = [];
+
+        for (let ball of candidates) {
+            const b = ball.getData('brand');
+            if (!uniqueBrands.has(b)) {
+                uniqueBrands.add(b);
+                selectedBalls.push(ball);
+            }
+            if (uniqueBrands.size === 3) break; // Mamy komplet!
+        }
+
+        if (uniqueBrands.size === 3) {
+            this.performTrinityMerge(selectedBalls[0], selectedBalls[1], selectedBalls[2]);
+        }
     }
 
     performTrinityMerge(ballA, ballB, ballC) {
         this.isMorphingTrinity = true;
         
-        // Zatrzymujemy kulki i wyłączamy im kolizje
         [ballA, ballB, ballC].forEach(b => {
-            b.isDestroying = true;
-            b.setSensor(true);
-            b.setStatic(true);
-            b.setVelocity(0,0);
+            b.isDestroying = true; b.setSensor(true); b.setStatic(true); b.setVelocity(0,0);
         });
 
         const centerX = this.scale.width / 2;
@@ -341,34 +460,76 @@ export class GameScene extends Phaser.Scene {
 
         this.effects.createEnergyRipple(centerX, centerY, true);
 
-        // Animacja zbiegania się do środka
+        // Animacja zlotu
         this.tweens.add({
             targets: [ballA, ballB, ballC],
-            x: centerX, 
-            y: centerY, 
-            angle: 720, 
-            scaleX: 0.1, 
-            scaleY: 0.1,
-            duration: 1500, 
-            ease: 'Expo.In',
+            x: centerX, y: centerY, angle: 720, scaleX: 0.1, scaleY: 0.1,
+            duration: 1500, ease: 'Expo.In',
             onComplete: () => {
-                // Usuwamy stare kulki
-                ballA.destroy(); 
-                ballB.destroy(); 
-                ballC.destroy();
-                
-                // Tworzymy Wielką Kulę
+                ballA.destroy(); ballB.destroy(); ballC.destroy();
                 this.spawnGrandTebBall(centerX, centerY);
             }
         });
     }
+performFinalImplosion(ballA, ballB, x, y) {
+        // 1. Wstęp: Kulki wirują i zbiegają się do środka (IMPLOZJA)
+        
+        // Dźwięk narastania (jeśli masz, jak nie to grand)
+        SoundManager.play('grand'); 
 
+        this.tweens.add({
+            targets: [ballA, ballB],
+            x: x, y: y,
+            angle: 360,          // Obrót przy wciąganiu
+            scaleX: 0, scaleY: 0, // Znikają w nicość
+            duration: 600,
+            ease: 'Back.In',     // Efekt "zassania"
+            onComplete: () => {
+                ballA.destroy(); 
+                ballB.destroy();
+                
+                // 2. Odsłonięcie Sygnetu (TEB Grand Ball jako czysty sygnet)
+                this.revealTheSignet(x, y);
+            }
+        });
+        
+        // Efekt wciągania cząsteczek
+        this.effects.createEnergyRipple(x, y, true);
+    }
+
+    revealTheSignet(x, y) {
+        // Tworzymy wizualny obiekt Sygnetu (bez fizyki na razie)
+        // Używamy tekstury 'ball_TEB_GRAND' (ona ma logo w środku)
+        // ALBO 'logo_teb' jeśli wolisz czyste logo bez tła
+        const core = this.add.image(x, y, 'ball_TEB_GRAND'); 
+        core.setDepth(2000);
+        core.setScale(0); // Startujemy od zera
+        core.setAlpha(1);
+
+        // 3. Pulsowanie i Wybuch
+        this.tweens.add({
+            targets: core,
+            scaleX: 1.2, scaleY: 1.2, // Rośnie szybko
+            duration: 400,
+            ease: 'Expo.Out',
+            onComplete: () => {
+                // Chwila zawieszenia (Tension)
+                this.tweens.add({
+                    targets: core,
+                    scaleX: 0.9, scaleY: 0.9, // Lekki skurcz przed wybuchem
+                    duration: 150,
+                    yoyo: true,
+                    repeat: 1,
+                    onComplete: () => {
+                        // 4. WIELKI WYBUCH
+                        this.performGrandExplosion(x, y, core);
+                    }
+                });
+            }
+        });
+    }
     spawnGrandTebBall(x, y) {
-        if (!this.textures.exists('ball_TEB_GRAND')) {
-            TextureGenerator.createGrandBall(this);
-        }
-
-        // Tworzymy obiekt jako obrazek (nie fizyczny)
+        // Tier 7 - Grand Ball
         const ball = this.add.image(x, y, 'ball_TEB_GRAND');
         ball.setDepth(3000); 
         ball.setScale(0);    
@@ -379,63 +540,90 @@ export class GameScene extends Phaser.Scene {
         }
         SoundManager.play('grand');
 
-        // --- ANIMACJA 1: POJAWIENIE SIĘ (Eksplozja) ---
+        // Faza 1: Pojawienie się i ładowanie
         this.tweens.add({
             targets: ball, 
             scaleX: 1.5, scaleY: 1.5, angle: 360, 
             ease: 'Elastic.Out', duration: 1200,
             onComplete: () => {
-                // Zwiększamy licznik w logice gry
-                this.grandBallsCollected++;
-                
-                // Dodajemy punkty i tekst od razu
-                this.score += TEB_GRAND_BALL.points;
-                this.events.emit('update-score', this.score);
-                if (this.effects) {
-                    this.effects.showFloatingText(x, y, `+${TEB_GRAND_BALL.points}`, '#fbbf24');
-                }
-
-                // UWAGA: NIE aktualizujemy UI tutaj, żeby nie psuć timingu!
-                // this.events.emit('update-grand-count', ...); <--- USUNIĘTE STĄD
-
-                this.isMorphingTrinity = false;
-
-                // --- DECYZJA ---
-                if (this.grandBallsCollected >= this.ballsToWin) {
-                    // 1. WYGRANA (3. kula)
-                    // Tu aktualizujemy UI od razu, bo nie ma animacji lotu
-                    this.events.emit('update-grand-count', this.grandBallsCollected);
-                    
-                    this.time.delayedCall(500, () => {
-                        this.triggerVictory();
-                    });
-                } else {
-                    // 2. ZBIERANIE (1. lub 2. kula) -> Odlot do UI
-                    this.time.delayedCall(800, () => {
-                        // --- ANIMACJA 2: LOT DO UI ---
-                        this.tweens.add({
-                            targets: ball,
-                            x: this.scale.width - 50, // Prawy górny róg
-                            y: 120, 
-                            scaleX: 0.1, scaleY: 0.1, alpha: 0, 
-                            duration: 800, ease: 'Back.In',
-                            onComplete: () => {
-                                // --- AKTUALIZACJA UI DOPIERO TERAZ ---
-                                // Kula doleciała i zniknęła -> zapalamy ikonkę
-                                this.events.emit('update-grand-count', this.grandBallsCollected);
-                                ball.destroy();
-                            }
-                        });
-                    });
-                }
+                // Faza 2: EKSPLOZJA (Board Cleaner)
+                this.performGrandExplosion(x, y, ball);
             }
         });
     }
 
-    triggerVictory() {
-        this.isGameOver = true; this.matter.world.pause(); this.events.emit('game-won', this.score);
+    performGrandExplosion(x, y, visualObject) {
+        // Efekt wizualny wybuchu
+        this.cameras.main.shake(600, 0.03); // Mocny wstrząs
+        this.effects.createEnergyRipple(x, y, true); // Wielka fala
+        
+        // Punkty
+        this.score += 5000;
+        this.events.emit('update-score', this.score);
+        this.effects.showFloatingText(x, y, `TEB MASTER!`, '#fbbf24');
+
+        // Logika niszczenia otoczenia
+        const killRadius = 300; // Zwiększony zasięg wybuchu
+        const ballsToKill = this.children.list.filter(c => 
+            c.body && c.getData && 
+            c !== visualObject && // Nie niszczymy samego sygnetu jeszcze
+            c.getData('tier') < 6 // Nie niszczymy innych T6 (żeby można było zrobić combo)
+        );
+
+        ballsToKill.forEach(b => {
+            const dist = Phaser.Math.Distance.Between(x, y, b.x, b.y);
+            if (dist < killRadius) {
+                this.createExplosionDebris(b.x, b.y, b.getData('tier'));
+                b.destroy();
+            } else if (dist < killRadius * 1.5) {
+                // Odpychamy te dalej
+                const angle = Phaser.Math.Angle.Between(x, y, b.x, b.y);
+                const force = 15;
+                b.setVelocity(Math.cos(angle)*force, Math.sin(angle)*force);
+            }
+        });
+
+        // Finałowe zniknięcie Sygnetu (Ucieczka do UI lub Fade out)
+        // Tutaj robimy Fade Out + Skalowanie jako "rozpłynięcie się energii"
+        this.tweens.add({
+            targets: visualObject,
+            scaleX: 3, scaleY: 3, 
+            alpha: 0,
+            duration: 400,
+            ease: 'Quad.Out',
+            onComplete: () => {
+                visualObject.destroy();
+                this.isMorphingTrinity = false;
+                
+                // Licznik Grand Balli
+                this.grandBallsCollected++;
+                this.events.emit('update-grand-count', this.grandBallsCollected);
+            }
+        });
     }
+    
+    // Mały efekt cząsteczkowy przy niszczeniu kulki wybuchem
+    createExplosionDebris(x, y, tier) {
+        if(!this.textures.exists('spark')) return;
+        const particles = this.add.particles(x, y, 'spark', {
+            speed: { min: 50, max: 150 },
+            scale: { start: 0.5, end: 0 },
+            lifespan: 300,
+            quantity: 5,
+            blendMode: 'ADD'
+        });
+        particles.explode();
+        this.time.delayedCall(300, () => particles.destroy());
+    }
+
+    triggerVictory() {
+        // W trybie Endless to może być po prostu nowy próg punktowy
+        this.events.emit('game-won', this.score);
+    }
+    
     triggerGameOver() {
-        this.isGameOver = true; this.matter.world.pause(); SoundManager.play('gameover'); this.events.emit('game-over');
+        this.isGameOver = true; this.matter.world.pause(); 
+        SoundManager.play('gameover'); 
+        this.events.emit('game-over');
     }
 }
