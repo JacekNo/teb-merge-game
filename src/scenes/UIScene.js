@@ -247,6 +247,9 @@ export class UIScene extends Phaser.Scene {
         // 1. Tło (Półprzezroczyste czarne)
         const bg = this.add.rectangle(width/2, height/2, width, height, 0x0f172a, 0.95).setInteractive();
         
+        // WAŻNA POPRAWKA: Dodajemy tło do kontenera OD RAZU, żeby było na samym spodzie
+        this.gameOverContainer.add(bg);
+
         // 2. Nagłówek
         this.gameOverTitle = this.add.text(width/2, height/2 - 120, 'KONIEC GRY', { 
             font: '900 48px Arial', color: '#ef4444', stroke: '#ffffff', strokeThickness: 2 
@@ -256,8 +259,11 @@ export class UIScene extends Phaser.Scene {
         this.finalScoreText = this.add.text(width/2, height/2 - 40, 'WYNIK: 0', { 
             font: 'bold 32px Arial', color: '#ffffff' 
         }).setOrigin(0.5);
+        
+        // Dodajemy teksty do kontenera
+        this.gameOverContainer.add([this.gameOverTitle, this.finalScoreText]);
 
-        // 4. Przyciski
+        // 4. Przyciski (Teraz dodadzą się NA WIERZCH tła)
         // Restart
         this.createMenuButton(this.gameOverContainer, width/2, height/2 + 60, 'SPRÓBUJ PONOWNIE', 0x3b82f6, () => {
             this.restartGame();
@@ -267,8 +273,6 @@ export class UIScene extends Phaser.Scene {
         this.createMenuButton(this.gameOverContainer, width/2, height/2 + 140, 'WRÓĆ DO MENU', 0x64748b, () => {
             this.returnToMainMenu();
         });
-
-        this.gameOverContainer.add([bg, this.gameOverTitle, this.finalScoreText]);
     }
 
     showGameOver() {
