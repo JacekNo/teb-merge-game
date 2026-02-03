@@ -18,7 +18,7 @@ export class CollectionScene extends Phaser.Scene {
             font: '900 28px Arial', color: '#fbbf24', stroke: '#000', strokeThickness: 4
         }).setOrigin(0.5);
 
-        const backBtn = this.add.text(w/2, h - 60, 'POWRÓT DO MENU', {
+        const backBtn = this.add.text(w/2, h - 90, 'POWRÓT DO MENU', {
             font: 'bold 20px Arial', color: '#ffffff', backgroundColor: '#334155', padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 

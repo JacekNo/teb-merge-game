@@ -24,10 +24,10 @@ scene: [StartScene, GameScene, UIScene, CollectionScene],
 
 // --- SEKCJA SKALOWANIA ---
 scale: {
-        mode: Phaser.Scale.FIT,
-        // ZMIANA: Wyłączamy centrowanie przez Phasera. 
-        // Zrobimy to lepiej w CSS, dzięki czemu unikniemy przesunięcia w prawo.
-        autoCenter: Phaser.Scale.NO_CENTER, 
+        mode: Phaser.Scale.FIT, // Skaluje zachowując proporcje
+        autoCenter: Phaser.Scale.CENTER_BOTH, // ZMIANA: Włączmy to z powrotem, to najbezpieczniejsza opcja w połączeniu z CSS
+        width: 400,
+        height: 800,
     },
     
     render: {

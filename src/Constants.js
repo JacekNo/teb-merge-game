@@ -4,13 +4,13 @@ export const SETTINGS = {
     friction: 0.02,
     dropDelay: 250,
     backgroundColor: '#0f172a',
-
+    
     // --- LAYOUT ---
     uiHeight: 0, 
     jarX: 0, jarY: 0,
     jarWidth: 400, jarHeight: 800,
 
-    sideMargin: 10, bottomMargin: 20,
+    sideMargin: 10, bottomMargin: 80,
     spawnY: 180, dangerLineY: 240,  
 };
 

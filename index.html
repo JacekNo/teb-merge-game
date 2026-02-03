@@ -11,15 +11,16 @@
         width: 100%;
         margin: 0;
         padding: 0;
-        background-color: #020617; /* Kolor tła strony (taki sam jak gry) */
-        overflow: hidden;
-        touch-action: none;
+        background-color: #0f172a; /* Kolor tła z Constants */
+        overflow: hidden; /* Blokuje przewijanie strony */
+        touch-action: none; /* Blokuje gesty przeglądarki (odświeżanie, zoom) */
+        -webkit-tap-highlight-color: transparent; /* Usuwa podświetlenie na urządzeniach dotykowych */
       }
 
       /* Kontener Gry - Flexbox Centering */
       #app {
         width: 100vw;
-        height: 100vh;
+        height: 100dvh;
         display: flex;
         justify-content: center;
         align-items: center;

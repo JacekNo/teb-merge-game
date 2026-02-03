@@ -1,88 +1,105 @@
 import Phaser from 'phaser';
 
 export class EffectManager {
-    constructor(scene) {
+    static scene;
+
+    static init(scene) {
         this.scene = scene;
     }
 
-    // Efekt fali uderzeniowej (przy łączeniu)
-    createEnergyRipple(x, y, isGrand = false) {
-        if (this.scene.textures.exists('ripple')) {
-            const ring = this.scene.add.image(x, y, 'ripple')
-                .setBlendMode(Phaser.BlendModes.SCREEN)
-                .setAlpha(isGrand ? 0.6 : 0.4)
-                .setScale(0.5);
-            
-            this.scene.tweens.add({
-                targets: ring,
-                scale: isGrand ? 4 : 2,
-                alpha: 0,
-                duration: 600,
-                onComplete: () => ring.destroy()
-            });
-        }
-        // Trzęsienie kamery
-        this.scene.cameras.main.shake(isGrand ? 200 : 50, 0.005);
+    // --- 1. TEKST PŁYWAJĄCY (Przywrócona metoda!) ---
+    static showFloatingText(x, y, text) {
+        if (!this.scene) return;
+        
+        const label = this.scene.add.text(x, y, text, {
+            font: '900 28px Arial',
+            color: '#fbbf24', // Złoty kolor
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5).setDepth(100);
+
+        this.scene.tweens.add({
+            targets: label,
+            y: y - 60, // Unosi się do góry
+            alpha: 0,  // Zanika
+            duration: 800,
+            ease: 'Power1',
+            onComplete: () => label.destroy()
+        });
     }
 
-    // Pływający tekst punktów (+100)
-    showFloatingText(x, y, message, color) {
-        // Tworzymy kontener, żeby łatwiej skalować tekst razem z ewentualnym cieniem
-        // Ale dla wydajności wystarczy sam Text z obrysem
-        const text = this.scene.add.text(x, y, message, { 
-            font: '900 28px Arial', 
-            color: color || '#ffffff', 
-            stroke: '#000000', 
-            strokeThickness: 4,
-            shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 2, fill: true }
-        }).setOrigin(0.5).setDepth(2000).setScale(0); // Startujemy od zera
+    // --- 2. SUBTELNY SHOCKWAVE ---
+    static createShockwave(x, y, scale = 1) {
+        if (!this.scene) return;
 
-        // 1. WYSKOK (Dynamiczny start)
-        this.scene.tweens.add({
-            targets: text,
-            scaleX: 1, scaleY: 1,
-            duration: 200,
-            ease: 'Back.Out', // Efekt sprężynki przy pojawieniu się
-        });
-
-        // 2. UNOSZENIE I ZNIKANIE (Delikatny koniec)
-        // Lekki losowy ruch na boki (żeby nie wszystkie leciały idealnie prosto)
-        const randomX = Phaser.Math.Between(-20, 20);
+        // Błysk w centrum (Flash) - mniejszy i szybszy
+        const flash = this.scene.add.circle(x, y, 15 * scale, 0xffffff, 0.6); // Mniejsza alpha (0.6)
+        flash.setBlendMode(Phaser.BlendModes.ADD);
         
         this.scene.tweens.add({
-            targets: text,
-            y: y - 80,       // Unoszenie w górę
-            x: x + randomX,  // Lekko na bok
-            alpha: 0,        // Zanikanie
-            duration: 1000,  // Całość trwa 1 sekundę
-            delay: 100,      // Chwila widoczności zanim zacznie znikać
+            targets: flash,
+            scale: 1.5, // Mniejsza skala końcowa
+            alpha: 0,
+            duration: 100, // Bardzo szybkie zniknięcie
+            onComplete: () => flash.destroy()
+        });
+
+        // Główny pierścień - cienki i elegancki
+        const ring1 = this.scene.add.graphics();
+        ring1.lineStyle(2, 0xffffff); // Cienki obrys (2px)
+        ring1.strokeCircle(0, 0, 15); // Mniejszy promień startowy
+        ring1.x = x;
+        ring1.y = y;
+        ring1.setBlendMode(Phaser.BlendModes.ADD);
+        ring1.setAlpha(0.5); // Startuje półprzezroczysty
+
+        this.scene.tweens.add({
+            targets: ring1,
+            scale: 2.5 * scale, // Skala max 2.5x (było 8x!)
+            alpha: { from: 0.5, to: 0 },
+            strokeWidth: 0,
+            duration: 300,
+            ease: 'Cubic.Out',
+            onComplete: () => ring1.destroy()
+        });
+
+        // Wtórny pierścień (Fala koloru) - ledwo widoczna
+        const ring2 = this.scene.add.graphics();
+        ring2.lineStyle(2, 0x4f46e5); // Cieńsza linia
+        ring2.strokeCircle(0, 0, 15);
+        ring2.x = x;
+        ring2.y = y;
+        ring2.setAlpha(0.3); // Bardzo delikatny
+
+        this.scene.tweens.add({
+            targets: ring2,
+            scale: 2.0 * scale, // Mniejszy zasięg (było 6x)
+            alpha: 0,
+            duration: 400,
             ease: 'Quad.Out',
-            onComplete: () => text.destroy() // Sprzątanie
+            onComplete: () => ring2.destroy()
         });
     }
 
-    // Iskry przy uderzeniu (Wielka Kula) - TEGO BRAKOWAŁO
-    createImpactSparks(x, y, isGrand = false) {
-        if (!this.scene.textures.exists('spark')) return;
+    // --- 3. EFEKT ŁĄCZENIA (MERGE) ---
+    static createMergeEffect(x, y, radius, color) {
+        if (!this.scene) return;
 
-        const particles = this.scene.add.particles(x, y, 'spark', {
-            speed: { min: 100, max: isGrand ? 400 : 200 },
+        // Rozprysk cząsteczek
+        const particles = this.scene.add.particles(x, y, 'ball_neutral_0', {
+            speed: { min: 50, max: 150 },
             angle: { min: 0, max: 360 },
-            scale: { start: isGrand ? 1.5 : 1, end: 0 },
+            scale: { start: 0.3, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 400,
             blendMode: 'ADD',
-            lifespan: isGrand ? 800 : 500,
-            quantity: isGrand ? 30 : 10,
-            gravityY: 300
+            tint: color ? parseInt(color.replace('#', '0x')) : 0xffffff
         });
 
-        // Cząsteczki muszą zniknąć po chwili (nie emitujemy ich w nieskończoność)
-        particles.explode();
+        particles.explode(12); 
+        this.scene.time.delayedCall(500, () => particles.destroy());
         
-        // Phaser 3.60+ particles.explode() nie tworzy obiektu, który trzeba niszczyć ręcznie,
-        // ale jeśli używasz emitera ciągłego, trzeba go zatrzymać. 
-        // Tutaj explode jest jednorazowy, ale sam manager cząsteczek warto posprzątać.
-        this.scene.time.delayedCall(1000, () => {
-            particles.destroy();
-        });
+        // Wywołanie fali uderzeniowej
+        this.createShockwave(x, y, radius / 40);
     }
 }
