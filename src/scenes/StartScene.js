@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SoundManager } from '../SoundManager';
 import { StorageManager } from '../StorageManager';
 import { setDifficulty } from '../Constants'; // Importujemy funkcję z Constants
+import { TextureGenerator } from '../TextureGenerator';
 
 export class StartScene extends Phaser.Scene {
     constructor() { super('StartScene'); }
@@ -32,7 +33,7 @@ export class StartScene extends Phaser.Scene {
     create() {
         const w = this.scale.width;
         const h = this.scale.height;
-
+        TextureGenerator.createAll(this);
         // Inicjalizacja dźwięku
         SoundManager.init(this);
         // Opcjonalnie: SoundManager.playMusic('theme');

@@ -113,34 +113,38 @@ export class MergeManager {
         const tier = objA.getData('tier');
         const brand = objA.getData('brand');
         
-        // Pozycja środkowa
         const midX = (objA.x + objB.x) / 2;
         const midY = (objA.y + objB.y) / 2;
 
-        // --- KLUCZOWE: Usuwanie ciał z World przed zniszczeniem GameObjectu ---
-        // To zapobiega błędom Matter.js "undefined properties"
+        // --- FIX: ZABIJAMY TWEENY PRZED ZNISZCZENIEM ---
+        // To zatrzymuje deformację (squash), zanim usuniemy ciało fizyczne.
+        // Zapobiega błędowi "Cannot read properties of undefined (reading 'position')"
+        this.scene.tweens.killTweensOf(objA);
+        this.scene.tweens.killTweensOf(objB);
+        // -----------------------------------------------
+
+        // Usuwanie ciał z World
         if (objA.body) this.scene.matter.world.remove(objA.body);
         if (objB.body) this.scene.matter.world.remove(objB.body);
 
-        // Teraz bezpiecznie niszczymy wizualną reprezentację
+        // Niszczenie wizualne
         objA.destroy();
         objB.destroy();
 
         // Logika gry (Dźwięk, Punkty)
-        SoundManager.play('merge');
+        SoundManager.play('merge', { tier: tier }); // Dodalem param tier dla lepszego dzwieku
         const points = (tier + 1) * 10;
         this.scene.events.emit('update-score', this.scene.score + points);
         this.scene.score += points;
 
         // Efekty
-        const brandInfo = BRANDS[brand]; 
+        const brandInfo = BRANDS[brand ? brand.toUpperCase() : 'TM']; 
         if (EffectManager && EffectManager.createMergeEffect) {
             EffectManager.createMergeEffect(midX, midY, objA.displayWidth * 0.6, brandInfo ? brandInfo.color : '#ffffff');
             EffectManager.showFloatingText(midX, midY, `+${points}`);
         }
 
-        // --- SPAWN NOWEJ KULKI ---
-        // Robimy to w tym samym cyklu, po usunięciu starych
+        // Spawn nowej kulki
         if (tier < 7) {
             this.spawnMergedBall(midX, midY, brand, tier + 1);
         }
@@ -153,13 +157,30 @@ export class MergeManager {
              }
         }
 
+        // isSafe = true, żeby nie zaliczyć Game Over
         const ball = this.ballManager.spawnPhysicalBall(x, y, brand, tier, true);
-        
-        // Zabezpieczenie przed nakładaniem się ciał - opcjonalnie lekki "pop"
-        // W Matter.js nowe ciało automatycznie rozepchnie sąsiadów, 
-        // ale dzięki usunięciu starych ciał linijkę wyżej, mamy na to miejsce.
-    }
 
+        if (ball) {
+            // 1. MIKRO PODSKOK (Fizyka)
+            ball.setVelocityY(-4); // Lekko w górę
+            ball.setAngularVelocity(Phaser.Math.FloatBetween(-0.1, 0.1));
+
+            // 2. BEZPIECZNA ELASTYCZNOŚĆ (Wizualne)
+            // WAŻNE: Nie ustawiamy scale na 0! Zaczynamy od 0.7
+            // Dzięki temu fizyka wciąż "widzi" kulkę i nie przepuści jej przez podłogę.
+            ball.setScale(0.7); 
+            
+            this.scene.tweens.add({
+                targets: ball,
+                scaleX: 1, 
+                scaleY: 1,
+                duration: 600,
+                ease: 'Elastic.Out',
+                easeParams: [1.2, 0.8] 
+            });
+        }
+    }
+    
     // --- Trinity zostaje bez zmian, tylko wywołanie w update ---
     checkTrinityCondition() {
         if (this.isMorphingTrinity) return;

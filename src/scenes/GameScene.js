@@ -79,7 +79,10 @@ export class GameScene extends Phaser.Scene {
         this.events.on('request-menu', () => { 
             this.scene.stop('UIScene');
             this.scene.start('StartScene'); 
+
+        
         });
+        this.setupDeformationSystem();
     }
 
     startNewGame() {
@@ -92,9 +95,13 @@ export class GameScene extends Phaser.Scene {
         this.isMorphingTrinity = false;
         this.isAiming = false;
 
-        this.ballManager.init(); // Reset kulek
+        // --- ZMIANA: Przesuwamy init() do środka delayedCall ---
+        // Było tu: this.ballManager.init(); 
 
         this.time.delayedCall(50, () => {
+            // TERAZ JEST TU:
+            this.ballManager.init(); 
+            
             if (this.scene.get('UIScene')) this.scene.get('UIScene').forceMenuClose();
             this.events.emit('update-grand-count', 0);
             this.events.emit('update-score', 0);
@@ -107,10 +114,9 @@ export class GameScene extends Phaser.Scene {
         // Animacje tła
         if (this.bgGrid) this.bgGrid.tilePositionY -= 20 * (delta / 1000);
         this.updateArtifacts(time, delta);
-        
-        // Sprawdzanie zasad gry
         this.checkDangerZone();
-        this.mergeManager.checkTrinityCondition(); // Delegacja do MergeManager
+        this.mergeManager.checkTrinityCondition();
+        //this.updateBallDeformation();// DEAKTYWOWANE NA RAZIE
     }
 
     setupInput() {
@@ -189,5 +195,78 @@ export class GameScene extends Phaser.Scene {
         this.matter.world.pause(); 
         SoundManager.play('gameover'); 
         this.events.emit('game-over');
+    }
+    setupDeformationSystem() {
+        // Nasłuchujemy KAŻDEGO zderzenia w grze
+        this.matter.world.on('collisionstart', (event) => {
+            event.pairs.forEach(pair => {
+                const { bodyA, bodyB } = pair;
+                // Deformujemy obie strony zderzenia (jeśli to kulki)
+                this.squashBall(bodyA);
+                this.squashBall(bodyB);
+            });
+        });
+    }
+
+    squashBall(body) {
+        if (!body || !body.gameObject) return;
+        const ball = body.gameObject;
+
+        // Ignorujemy ściany i sensory
+        if (!ball.getData || ball.getData('tier') === undefined) return;
+        
+        // Jeśli kulka już jest animowana (np. pojawia się), nie przeszkadzajmy jej
+        if (this.tweens.isTweening(ball)) return;
+
+        const speed = Math.hypot(body.velocity.x, body.velocity.y);
+        
+        // Zwiększamy próg prędkości (tylko mocne uderzenia)
+        if (speed > 4) { 
+            // Bardzo delikatny squash (max 10%, było 20%)
+            // Im mniej zmieniamy skalę, tym mniejsza szansa, że kulki wejdą w siebie
+            const squashFactor = Math.min(speed * 0.02, 0.1); 
+
+            this.tweens.add({
+                targets: ball,
+                // Tylko wizualne spłaszczenie
+                scaleX: 1 + squashFactor,
+                scaleY: 1 - squashFactor,
+                duration: 50,
+                yoyo: true,
+                ease: 'Sine.Out',
+                onComplete: () => {
+                    // Zawsze wracamy do idealnego koła
+                    if(ball.active) ball.setScale(1); 
+                }
+            });
+        }
+    }
+
+    // Dodaj to do metody update(), żeby obsłużyć spadanie
+    updateBallDeformation() {
+        // Pobieramy wszystkie aktywne kulki
+        const balls = this.children.list.filter(c => 
+            c.body && c.active && c.getData && c.getData('tier') !== undefined
+        );
+
+        balls.forEach(ball => {
+            // Jeśli kulka spada szybko...
+            if (ball.body.velocity.y > 5) {
+                // ...wydłużamy ją (Stretch)
+                // Maksymalnie o 15%, żeby nie wyglądała jak jajko
+                const stretch = Math.min(ball.body.velocity.y * 0.01, 0.15);
+                
+                // Nie używamy tweensa, tylko ustawiamy na sztywno w klatce
+                // Dzięki temu deformacja jest płynna i reaguje na fizykę
+                ball.scaleY = 1 + stretch;
+                ball.scaleX = 1 - (stretch * 0.5); // Zwężamy, żeby zachować masę
+            } 
+            // Jeśli kulka leży lub porusza się wolno, a nie jest w trakcie tweensa zderzeniowego...
+            else if (!this.tweens.isTweening(ball)) {
+                // ...powoli wraca do kształtu koła (Liniowa interpolacja)
+                ball.scaleX = Phaser.Math.Linear(ball.scaleX, 1, 0.1);
+                ball.scaleY = Phaser.Math.Linear(ball.scaleY, 1, 0.1);
+            }
+        });
     }
 }

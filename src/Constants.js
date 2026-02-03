@@ -88,6 +88,15 @@ export function setDifficulty(mode) {
         const count = (mode === 'EASY') ? 4 : 2; 
         for(let i=0; i<count; i++) GAME_CONFIG.spawnPool.push({ brand: brand.id, tier: 1 });
     });
+
+
 }
 
 setDifficulty('MEDIUM');
+
+        export const DEPTHS = {
+        BACKGROUND: 0, // Tło, słoik
+        BALLS: 10,     // Kulki
+        EFFECTS: 20,   // Wybuchy, iskry, fale
+        UI: 30         // Pływające teksty, menu
+    };

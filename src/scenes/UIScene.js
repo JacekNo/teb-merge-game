@@ -111,6 +111,7 @@ export class UIScene extends Phaser.Scene {
 
         // Update Next Ball
         gameScene.events.on('update-next', (d) => { 
+            if (!this.sys || !this.textures) return;
             let key = `ball_${d.brand}_${d.tier}`;
             if (!this.textures.exists(key)) key = 'ball_neutral_0';
             

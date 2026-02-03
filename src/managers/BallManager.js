@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
-import { SETTINGS, GAME_CONFIG, TIERS } from '../Constants';
+import { SETTINGS, GAME_CONFIG, TIERS, DEPTHS } from '../Constants';
 import { SoundManager } from '../SoundManager';
-
 export class BallManager {
     constructor(scene) {
         this.scene = scene;
@@ -51,7 +50,7 @@ export class BallManager {
         if (this.currentBallPreview) this.currentBallPreview.x = clampedX;
     }
 
-    spawnPreviewBall() {
+   spawnPreviewBall() {
         if (this.currentBallPreview) this.currentBallPreview.destroy();
         
         const tierDef = TIERS.find(t => t.level === this.currentTier);
@@ -63,19 +62,38 @@ export class BallManager {
 
         if (!this.scene.textures.exists(key)) key = 'ball_neutral_0';
 
-        // Używamy pozycji aimLine lub środka
-        const startX = this.aimLine ? this.aimLine.x : this.scene.scale.width / 2;
+        // Pozycja docelowa (tam gdzie kulka ma wisieć)
+        const targetX = this.aimLine ? this.aimLine.x : this.scene.scale.width / 2;
+        const targetY = SETTINGS.spawnY;
 
-        this.currentBallPreview = this.scene.add.image(startX, SETTINGS.spawnY, key)
+        // Tworzymy kulkę wyżej (poza ekranem lub tuż pod sufitem)
+        this.currentBallPreview = this.scene.add.image(targetX, targetY - 100, key)
             .setDisplaySize(tierDef.radius * 2, tierDef.radius * 2)
-            .setAlpha(0.8)
-            .setDepth(20); // Nad tłem
+            .setAlpha(0); // Na początku niewidoczna
 
-        // Mała animacja oddychania
-        this.scene.tweens.add({ 
-            targets: this.currentBallPreview, 
-            scaleX: '*=1.05', scaleY: '*=1.05', 
-            duration: 500, yoyo: true, repeat: -1 
+        // Ustawiamy głębię (żeby była nad linią celowniczą, ale pod UI)
+        // Zakładamy, że zaimportowałeś DEPTHS z Constants, jeśli nie - wpisz 25 "z ręki"
+        // import { DEPTHS } from '../Constants'; 
+        // this.currentBallPreview.setDepth(DEPTHS.UI - 1); 
+        this.currentBallPreview.setDepth(25); 
+
+        // === ANIMACJA WPADANIA (Entry Animation) ===
+        this.scene.tweens.add({
+            targets: this.currentBallPreview,
+            y: targetY,      // Spada do pozycji docelowej
+            alpha: 0.8,      // Pojawia się
+            duration: 400,
+            ease: 'Bounce.Out', // Sprężyste uderzenie o "dno" łapki
+            onComplete: () => {
+                // Dopiero jak wpadnie, odpalamy delikatne "oddychanie"
+                if (this.currentBallPreview) {
+                    this.scene.tweens.add({ 
+                        targets: this.currentBallPreview, 
+                        scaleX: '*=1.05', scaleY: '*=1.05', 
+                        duration: 500, yoyo: true, repeat: -1 
+                    });
+                }
+            }
         });
     }
 
@@ -133,6 +151,7 @@ export class BallManager {
         ball.setDensity(0.001 + (tierLevel * 0.0005));
         
         ball.setData({ brand: brand, tier: tierLevel, safe: isSafe });
+        ball.setDepth(DEPTHS.BALLS);
 
         if (!isSafe) {
             SoundManager.play('drop');

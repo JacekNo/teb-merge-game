@@ -296,9 +296,19 @@ export class TextureGenerator {
 
     static createSpark(scene) { 
         if (!scene.textures.exists('spark')) {
-            const canvas = document.createElement('canvas'); canvas.width = 8; canvas.height = 8; const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(4,4,0, 4,4,4); grad.addColorStop(0, 'white'); grad.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = grad; ctx.fillRect(0,0,8,8);
+            const size = 32; // Większa tekstura
+            const canvas = document.createElement('canvas'); 
+            canvas.width = size; canvas.height = size; 
+            const ctx = canvas.getContext('2d');
+            
+            // Miękki gradient (Glow)
+            const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2); 
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1)'); 
+            grad.addColorStop(0.4, 'rgba(255, 255, 255, 0.5)');
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.fillStyle = grad; 
+            ctx.fillRect(0,0,size,size);
             scene.textures.addCanvas('spark', canvas);
         }
     }
