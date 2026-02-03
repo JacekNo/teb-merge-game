@@ -8,9 +8,9 @@ export const SETTINGS = {
     // --- LAYOUT ---
     uiHeight: 0, 
     jarX: 0, jarY: 0,
-    jarWidth: 400, jarHeight: 800,
+    jarWidth: 400, jarHeight: 620,
 
-    sideMargin: 10, bottomMargin: 80,
+    sideMargin: 10, bottomMargin: 20,
     spawnY: 180, dangerLineY: 240,  
 };
 
