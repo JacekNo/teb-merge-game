@@ -7,35 +7,61 @@
     <style>
       /* Reset i Ustawienia Podstawowe */
       html, body {
-        height: 100%;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        background-color: #020617; /* Kolor tła strony (taki sam jak gry) */
-        overflow: hidden;
-        touch-action: none;
-      }
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    height: 100%;
+    background-color: #0f172a;
+    overflow: hidden; /* Blokuje scrollowanie */
+    position: fixed; /* Zapobiega "gumkowaniu" strony na iOS */
+    }
 
-      /* Kontener Gry - Flexbox Centering */
-      #app {
+    #app {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100vw;
-        height: 100vh;
+        height: 100dvh; /* Dynamic viewport height */
+        
         display: flex;
         justify-content: center;
         align-items: center;
-      }
+        z-index: 1;
+    }
 
-      /* Fix dla Phasera w trybie FIT - upewniamy się, że canvas nie ma dziwnych marginesów */
-      #app canvas {
-        display: block;
+    canvas {
+        display: block; /* Usuwa dziwne dolne marginesy dla elementów inline */
         max-width: 100%;
         max-height: 100%;
-        box-shadow: 0 0 20px rgba(0,0,0,0.5); /* Ładny cień wokół gry na laptopie */
-      }
+        object-fit: contain; /* Klucz do skalowania */
+    }
     </style>
-    <script type="module" crossorigin src="/teb-merge-game/assets/index-tgYBFbmn.js"></script>
+    <script type="module" crossorigin src="/teb-merge-game/assets/index-DugovVcB.js"></script>
   </head>
   <body>
     <div id="app"></div>
+    <script >
+  // Funkcja, która "siłowo" ustawia wysokość
+  function resizeApp() {
+    const app = document.getElementById('app');
+    if (app) {
+      // visualViewport.height to PRAWDZIWA wysokość widoczna dla oka
+      // window.innerHeight czasem kłamie na iOS
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      
+      app.style.height = `${height}px`;
+      
+      // Wymuszamy scroll do góry (żeby schować pasek, jeśli się da)
+      window.scrollTo(0, 0);
+    }
+  }
+
+  // Odpalamy przy starcie
+  window.addEventListener('load', resizeApp);
+  
+  // Odpalamy przy każdej zmianie rozmiaru (np. obrócenie telefonu, wysunięcie klawiatury)
+  window.visualViewport.addEventListener('resize', resizeApp);
+  window.addEventListener('resize', resizeApp);
+</script>
   </body>
 </html>
