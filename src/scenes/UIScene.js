@@ -84,7 +84,11 @@ export class UIScene extends Phaser.Scene {
             }
             this.grandIcons.push(icon);
         }
-
+        this.add.text(this.scale.width / 2, 20, 'WERSJA: FIX 1.2', { 
+        font: '16px Arial', 
+        color: '#00ff00', 
+        backgroundColor: '#000' 
+        }).setOrigin(0.5).setDepth(9999);
         // --- TOAST NOTIFICATION SYSTEM (NOWOŚĆ!) ---
         this.createToastSystem(width);
 
