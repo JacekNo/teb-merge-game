@@ -16,7 +16,7 @@
     position: fixed; /* Zapobiega "gumkowaniu" strony na iOS */
     }
 
-    #app {
+ #app {
     position: absolute;
     top: 0;
     left: 0;
@@ -30,6 +30,11 @@
     z-index: 1;
 }
 
+/* Dodatkowo: upewnij się, że tło strony pasuje do tła gry, żeby ukryć pasy */
+body {
+    background-color: #0f172a; /* Ten sam kolor co w Constants.js */
+}
+
     canvas {
         display: block; /* Usuwa dziwne dolne marginesy dla elementów inline */
         max-width: 100%;
@@ -37,7 +42,7 @@
         object-fit: contain; /* Klucz do skalowania */
     }
     </style>
-    <script type="module" crossorigin src="/teb-merge-game/assets/index-DugovVcB.js"></script>
+    <script type="module" crossorigin src="/teb-merge-game/assets/index-DNKOirOE.js"></script>
   </head>
   <body>
     <div id="app"></div>
