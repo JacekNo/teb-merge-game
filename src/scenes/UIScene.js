@@ -84,7 +84,7 @@ export class UIScene extends Phaser.Scene {
             }
             this.grandIcons.push(icon);
         }
-        this.add.text(this.scale.width / 2, 20, 'WERSJA: FIX 1.2', { 
+        this.add.text(this.scale.width / 2, 20, 'WERSJA: 1.2 - gorza request', { 
         font: '16px Arial', 
         color: '#00ff00', 
         backgroundColor: '#000' 
