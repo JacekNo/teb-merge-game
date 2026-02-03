@@ -17,17 +17,18 @@
     }
 
     #app {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100dvh; /* Dynamic viewport height */
-        
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1;
-    }
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100dvh;
+    
+    display: flex;
+    justify-content: center; /* Centrujemy poziomo */
+    align-items: flex-end;   /* ZMIANA: Dobicie do dołu zamiast center */
+    padding-bottom: 20px;    /* Mały odstęp od samej krawędzi ekranu */
+    z-index: 1;
+}
 
     canvas {
         display: block; /* Usuwa dziwne dolne marginesy dla elementów inline */
@@ -40,28 +41,6 @@
   </head>
   <body>
     <div id="app"></div>
-    <script >
-  // Funkcja, która "siłowo" ustawia wysokość
-  function resizeApp() {
-    const app = document.getElementById('app');
-    if (app) {
-      // visualViewport.height to PRAWDZIWA wysokość widoczna dla oka
-      // window.innerHeight czasem kłamie na iOS
-      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      
-      app.style.height = `${height}px`;
-      
-      // Wymuszamy scroll do góry (żeby schować pasek, jeśli się da)
-      window.scrollTo(0, 0);
-    }
-  }
-
-  // Odpalamy przy starcie
-  window.addEventListener('load', resizeApp);
-  
-  // Odpalamy przy każdej zmianie rozmiaru (np. obrócenie telefonu, wysunięcie klawiatury)
-  window.visualViewport.addEventListener('resize', resizeApp);
-  window.addEventListener('resize', resizeApp);
-</script>
+    
   </body>
 </html>
