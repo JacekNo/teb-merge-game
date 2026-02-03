@@ -16,7 +16,7 @@
     position: fixed; /* Zapobiega "gumkowaniu" strony na iOS */
     }
 
-    #app {
+ #app {
     position: absolute;
     top: 0;
     left: 0;
@@ -28,6 +28,11 @@
     align-items: flex-end;   /* ZMIANA: Dobicie do dołu zamiast center */
     padding-bottom: 20px;    /* Mały odstęp od samej krawędzi ekranu */
     z-index: 1;
+}
+
+/* Dodatkowo: upewnij się, że tło strony pasuje do tła gry, żeby ukryć pasy */
+body {
+    background-color: #0f172a; /* Ten sam kolor co w Constants.js */
 }
 
     canvas {
