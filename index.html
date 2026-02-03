@@ -39,6 +39,29 @@
   </head>
   <body>
     <div id="app"></div>
+    <script >
+  // Funkcja, która "siłowo" ustawia wysokość
+  function resizeApp() {
+    const app = document.getElementById('app');
+    if (app) {
+      // visualViewport.height to PRAWDZIWA wysokość widoczna dla oka
+      // window.innerHeight czasem kłamie na iOS
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      
+      app.style.height = `${height}px`;
+      
+      // Wymuszamy scroll do góry (żeby schować pasek, jeśli się da)
+      window.scrollTo(0, 0);
+    }
+  }
+
+  // Odpalamy przy starcie
+  window.addEventListener('load', resizeApp);
+  
+  // Odpalamy przy każdej zmianie rozmiaru (np. obrócenie telefonu, wysunięcie klawiatury)
+  window.visualViewport.addEventListener('resize', resizeApp);
+  window.addEventListener('resize', resizeApp);
+</script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
