@@ -2,8 +2,35 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>TEB Masters</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- 1. TYTUŁ I OPIS (SEO) -->
+    <title>TEB Masters - Edukacyjna Fuzja</title>
+    <meta name="description" content="Łącz wiedzę, zdobywaj stopnie kariery i zostań Mistrzem w TEB Masters! Wciągająca gra logiczna z fizyką." />
+    <meta name="keywords" content="gra, edukacja, teb, fizyka, merge game, suika" />
+    <meta name="author" content="Jacek Nowacki" />
+
+    <!-- 2. FAVICON (Ikona na karcie przeglądarki) -->
+    <!-- Używamy Emoji jako SVG - brak dodatkowych plików! -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚛️</text></svg>">
+
+    <!-- 3. OPEN GRAPH (Wygląd linku na FB/Discord/LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://twoja-domena-gry.pl/" />
+    <meta property="og:title" content="TEB Masters - Zostań Mistrzem!" />
+    <meta property="og:description" content="Czy uda Ci się ustabilizować reaktor? Połącz elementy wiedzy i osiągnij najwyższy poziom w nowej grze logicznej." />
+    
+    <!-- Obrazek musi być w folderze /public/assets/ lub /assets/ w zależności od builda -->
+    <!-- Wskazujemy na plik, który już masz w grze -->
+    <meta property="og:image" content="/teb-merge-game/assets/teb_masters2.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- 4. TWITTER CARD (Wygląd na X/Twitterze) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TEB REACTOR" />
+    <meta name="twitter:description" content="Gra logiczna o łączeniu wiedzy. Zagraj teraz!" />
+    <meta name="twitter:image" content="/teb-merge-game/assets/teb_masters.png" />
     <style>
       /* Reset i Ustawienia Podstawowe */
       html, body {
@@ -42,7 +69,7 @@ body {
         object-fit: contain; /* Klucz do skalowania */
     }
     </style>
-    <script type="module" crossorigin src="/teb-merge-game/assets/index-Bc1hRDn_.js"></script>
+    <script type="module" crossorigin src="/teb-merge-game/assets/index-CNqaWuaw.js"></script>
   </head>
   <body>
     <div id="app"></div>
