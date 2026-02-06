@@ -31,48 +31,149 @@
     <meta name="twitter:title" content="TEB Masters" />
     <meta name="twitter:description" content="Gra logiczna o łączeniu wiedzy. Zagraj teraz!" />
     <meta name="twitter:image" content="/teb-merge-game/assets/teb_masters2.png" />
-    <style>
-      /* Reset i Ustawienia Podstawowe */
-      html, body {
-    margin: 0 !important;
-    padding: 0 !important;
+<style>
+  :root {
+    --bg-color: #020617;
+    --brand-blue: #3b82f6;
+    --brand-gold: #fbbf24;
+  }
+
+  body { 
+    margin: 0; 
+    padding: 0; 
+    background-color: var(--bg-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden; 
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Usuwamy stąd background-image, przenosimy do warstwy niżej */
+  }
+
+  /* --- 1. SCREENING (TŁO Z OBRAZKIEM) --- */
+  .screening-layer {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0;
+    
+    /* Kolor awaryjny (zanim załaduje się obrazek) */
+    background-color: #020617;
+
+    /* Ustawienia Obrazka */
+    background-image: url('/assets/hero_bg.png');
+    background-size: cover;        /* KLUCZOWE: Skaluj by wypełnić, przytnij nadmiar */
+    background-position: center;   /* KLUCZOWE: Środek obrazka zawsze na środku ekranu */
+    background-repeat: no-repeat;
+  }
+
+  /* --- WARSTWA PRZYCIEMNIAJĄCA (OVERLAY) --- */
+  /* To sprawi, że gra i napisy będą czytelne na tle grafiki */
+  .screening-layer::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    /* Gradient: Środek lekko prześwitujący, boki ciemniejsze */
+    background: radial-gradient(circle at 50% 50%, rgba(2, 6, 23, 0.3) 0%, rgba(2, 6, 23, 0.85) 100%);
+    z-index: 1;
+  }
+
+  /* Dekoracje boczne (Tylko Desktop) */
+  .side-banner {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 300px;
+    text-align: center;
+    color: white;
+    display: none; 
+    pointer-events: none; 
+    z-index: 5; /* Musi być wyżej niż tło i overlay */
+  }
+
+  .side-left { left: 5%; }
+  .side-right { right: 5%; }
+
+  .banner-title {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--brand-blue);
+    text-transform: uppercase;
+    margin: 0;
+    /* Mocniejszy cień tekstu dla czytelności */
+    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+  }
+
+  .banner-subtitle {
+    font-size: 1.2rem;
+    color: #e2e8f0;
+    margin-top: 10px;
+    font-weight: 600;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  }
+
+  /* --- 2. KONTENER GRY --- */
+  #game-wrapper {
+    position: relative;
+    z-index: 10;
+    /* Cień odrywający grę od tła */
+    box-shadow: 0 0 80px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 100vh;
+    max-width: 100vw;
+    background: #000;
+  }
+
+  #app {
     width: 100%;
     height: 100%;
-    background-color: #0f172a;
-    overflow: hidden; /* Blokuje scrollowanie */
-    position: fixed; /* Zapobiega "gumkowaniu" strony na iOS */
+    display: block;
+  }
+
+  /* --- RESPONSYWNOŚĆ --- */
+  @media (min-width: 1000px) {
+    .side-banner { display: block; }
+    .side-left { animation: slideInLeft 1s ease-out; }
+    .side-right { animation: slideInRight 1s ease-out; }
+  }
+  
+  /* Na mobile ukrywamy obrazek, żeby oszczędzać transfer i baterię */
+  @media (max-width: 999px) {
+    .screening-layer {
+        background-image: none;
+        background: radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%);
     }
+    .screening-layer::after { display: none; }
+  }
 
- #app {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100dvh;
-    
-    display: flex;
-    justify-content: center; /* Centrujemy poziomo */
-    align-items: flex-end;   /* ZMIANA: Dobicie do dołu zamiast center */
-    padding-bottom: 20px;    /* Mały odstęp od samej krawędzi ekranu */
-    z-index: 1;
-}
+  @keyframes slideInLeft { from { opacity: 0; transform: translate(-50px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
+  @keyframes slideInRight { from { opacity: 0; transform: translate(50px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
 
-/* Dodatkowo: upewnij się, że tło strony pasuje do tła gry, żeby ukryć pasy */
-body {
-    background-color: #0f172a; /* Ten sam kolor co w Constants.js */
-}
-
-    canvas {
-        display: block; /* Usuwa dziwne dolne marginesy dla elementów inline */
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain; /* Klucz do skalowania */
-    }
-    </style>
-    <script type="module" crossorigin src="/teb-merge-game/assets/index-Dzb01bBC.js"></script>
+</style>
+    <script type="module" crossorigin src="/teb-merge-game/assets/index-DsN0nlea.js"></script>
   </head>
   <body>
-    <div id="app"></div>
-    
+
+    <!-- TŁO / SCREENING -->
+    <div class="screening-layer"></div>
+
+    <!-- BANERY BOCZNE (Widoczne tylko na PC) -->
+    <div class="side-banner side-left">
+      <h1 class="banner-title">TEB</h1>
+      <p class="banner-subtitle">EDUKACJA PRZYSZŁOŚCI</p>
+    </div>
+
+    <div class="side-banner side-right">
+      <h1 class="banner-title" style="color: var(--brand-gold)">GRAJ</h1>
+      <p class="banner-subtitle">ZDOBĄDŹ DYPLOM MISTRZA</p>
+    </div>
+
+    <!-- KONTENER GRY -->
+    <div id="game-wrapper">
+      <div id="app"></div>
+    </div>
+
   </body>
 </html>
