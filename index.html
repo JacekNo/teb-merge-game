@@ -38,18 +38,21 @@
     --brand-gold: #fbbf24;
   }
 
+  
   body { 
     margin: 0; 
     padding: 0; 
     background-color: var(--bg-color);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow: hidden; 
-    height: 100vh;
+    
+    /* Używamy dvh (Dynamic Viewport Height) dla mobile */
+    height: 100dvh; 
     width: 100vw;
+    
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Usuwamy stąd background-image, przenosimy do warstwy niżej */
   }
 
   /* --- 1. SCREENING (TŁO Z OBRAZKIEM) --- */
@@ -114,16 +117,32 @@
   }
 
   /* --- 2. KONTENER GRY --- */
-  #game-wrapper {
+ #game-wrapper {
     position: relative;
     z-index: 10;
-    /* Cień odrywający grę od tła */
-    box-shadow: 0 0 80px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    overflow: hidden;
-    max-height: 100vh;
+    
+    /* --- FIX PROPORCJI --- */
+    /* Na mobile: bierzemy całą dostępną wysokość */
+    height: 100dvh; 
+    /* Szerokość obliczamy z proporcji 9:16 względem wysokości */
+    aspect-ratio: 9/16;
+    
+    /* Ale nie pozwalamy wyjść poza szerokość ekranu (dla mobile) */
     max-width: 100vw;
+    
+    /* Cień i tło */
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
     background: #000;
+    overflow: hidden;
+  }
+  
+  /* Na Desktopie dodajemy ramkę */
+  @media (min-width: 500px) {
+      #game-wrapper {
+          border-radius: 20px;
+          /* Ograniczamy wysokość, żeby nie trzeba było scrollować */
+          max-height: 90vh; 
+      }
   }
 
   #app {
@@ -152,7 +171,7 @@
   @keyframes slideInRight { from { opacity: 0; transform: translate(50px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
 
 </style>
-    <script type="module" crossorigin src="/teb-merge-game/assets/index-fBiR0MIR.js"></script>
+    <script type="module" crossorigin src="/teb-merge-game/assets/index-BIXKDqYb.js"></script>
   </head>
   <body>
 
