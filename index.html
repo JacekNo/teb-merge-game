@@ -36,6 +36,7 @@
     --bg-color: #020617;
     --brand-blue: #3b82f6;
     --brand-gold: #fbbf24;
+    --brand-color: #102D69;
   }
 
   
@@ -82,26 +83,72 @@
     z-index: 1;
   }
 
-  /* Dekoracje boczne (Tylko Desktop) */
-  .side-banner {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 300px;
-    text-align: center;
-    color: white;
-    display: none; 
-    pointer-events: none; 
-    z-index: 5; /* Musi być wyżej niż tło i overlay */
+    /* Dekoracje boczne (Tylko Desktop) */
+  /* Banery reklamowe (desktop) */
+    .side-banner{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    display:none;
+    z-index:20;
+
+    aspect-ratio: 300 / 1050;
+
+    /* limit wysokości i szerokości */
+    height: min(90dvh, 920px);
+    width: auto;
+    max-width: clamp(160px, 18vw, 300px);
+
+    border-radius: 18px;
+    overflow:hidden;
+    /* reszta Twoich efektów */
+  
+    /* Klikalność */
+    pointer-events: auto;
+    text-decoration: none;
+
+    /* Estetyka “nie-śmietnikowa” */
+    border-radius: 18px;
+    overflow: hidden;
+
+    /* Panel, żeby baner nie gryzł się z tłem */
+    background: rgba(2, 6, 23, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
   }
 
-  .side-left { left: 5%; }
-  .side-right { right: 5%; }
+  .side-banner__img{
+  display:block;
+  height: min(90dvh, 920px);  /* dopasuj: 85–92dvh jest zwykle okej */
+  width: auto;               /* szerokość z proporcji JPG */
+  max-width: clamp(160px, 18vw, 300px); /* żeby nie zrobił się za szeroki */
+  object-fit: contain;       /* ważne: nie tnij reklamy */
+}
+  @media (min-width: 1000px){
+    body{
+      padding-inline: clamp(180px, 22vw, 360px);
+      box-sizing: border-box;
+    }
+}
+    @media (min-width: 1000px) {
+  .side-banner { display: block; }
+  .side-left { animation: slideInLeft 1s ease-out; }
+  .side-right { animation: slideInRight 1s ease-out; }
+}
+  /* Pozycje */
+  .side-left  { left: 4vw; }
+  .side-right { right: 4vw; }
+
 
   .banner-title {
     font-size: 3rem;
     font-weight: 900;
-    color: var(--brand-blue);
+    color: var(--bg);
     text-transform: uppercase;
     margin: 0;
     /* Mocniejszy cień tekstu dla czytelności */
@@ -171,23 +218,27 @@
   @keyframes slideInRight { from { opacity: 0; transform: translate(50px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
 
 </style>
-    <script type="module" crossorigin src="/teb-merge-game/assets/index-pcfV6HJB.js"></script>
+    <script type="module" crossorigin src="/teb-merge-game/assets/index-DPyW4dpQ.js"></script>
   </head>
   <body>
 
     <!-- TŁO / SCREENING -->
     <div class="screening-layer"></div>
 
-    <!-- BANERY BOCZNE (Widoczne tylko na PC) -->
-    <div class="side-banner side-left">
-      <h1 class="banner-title">TEB</h1>
-      <p class="banner-subtitle">EDUKACJA PRZYSZŁOŚCI</p>
-    </div>
+<!-- BANERY REKLAMOWE (desktop) -->
+<a class="side-banner side-left"
+   href="https://szkolasrednia.teb.pl"
+   target="_blank" rel="noopener noreferrer"
+   aria-label="Reklama — przejdź do strony TEB">
+  <img class="side-banner__img" src="/teb-merge-game/assets/side-banner.jpg" alt="Reklama TEB" loading="lazy" />
+</a>
 
-    <div class="side-banner side-right">
-      <h1 class="banner-title" style="color: var(--brand-gold)">GRAJ</h1>
-      <p class="banner-subtitle">ZDOBĄDŹ DYPLOM MISTRZA</p>
-    </div>
+<a class="side-banner side-right"
+   href="https://szkolasrednia.teb.pl"
+   target="_blank" rel="noopener noreferrer"
+   aria-label="Reklama — przejdź do strony gry">
+  <img class="side-banner__img" src="/teb-merge-game/assets/side-banner.jpg" alt="Reklama — zagraj w TEB Masters" loading="lazy" />
+</a>
 
     <!-- KONTENER GRY -->
     <div id="game-wrapper">
